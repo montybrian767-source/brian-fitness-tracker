@@ -117,11 +117,11 @@ st.sidebar.caption('Nutrition • Recovery • AI Rotation • LA Fitness')
 if page=='Dashboard':
     st.markdown('<div class="hero"><h1>Brian Fitness Tracker Pro v17</h1><p>Nutrition + Recovery Dashboard · AI Workout Rotation Engine · 4-week blocks · investor-style dashboard</p></div>', unsafe_allow_html=True)
     active=get_active_workouts(); today=date.today().strftime('%A')
-    today_df=active[active.day.eq(today)] if 'day' in active else pd.DataFrame()
+    today_df=active[active['day'].eq(today)] if 'day' in active else pd.DataFrame()
     c1,c2,c3,c4=st.columns(4)
     c1.metric('Active Block', f"Block {profile.get('active_block',1)}")
     c2.metric('Current Week', profile.get('week',1))
-    c3.metric('Gym Sessions', log.date.nunique() if not log.empty and 'date' in log else 0)
+    c3.metric('Gym Sessions', log['date'].nunique() if not log.empty and 'date' in log else 0)
     c4.metric('Total Volume', f"{log.volume.sum():,.0f} lbs" if not log.empty and 'volume' in log else '0 lbs')
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader(f"Today's Mission: {today}")
@@ -133,14 +133,14 @@ if page=='Dashboard':
     st.markdown('</div>', unsafe_allow_html=True)
     st.subheader('Weekly Plan')
     for day in DAYS:
-        d=active[active.day.eq(day)] if 'day' in active else pd.DataFrame()
+        d=active[active['day'].eq(day)] if 'day' in active else pd.DataFrame()
         if d.empty: continue
         st.markdown(f"<div class='day-card'><div class='day-title'>{day} — {d.iloc[0].workout}</div><div class='muted'>{d.iloc[0].muscle_group} · {len(d)} exercises</div></div>", unsafe_allow_html=True)
 
 elif page=='Today Workout':
     active=get_active_workouts(); lib=read_csv(LIB)
     day=st.selectbox('Workout Day',DAYS,index=DAYS.index(date.today().strftime('%A')) if date.today().strftime('%A') in DAYS else 0)
-    d=active[active.day.eq(day)].reset_index(drop=True)
+    d=active[active['day'].eq(day)].reset_index(drop=True)
     st.markdown(f'<div class="hero"><h1>{day}</h1><p>{d.iloc[0].workout if not d.empty else "Workout"}</p></div>', unsafe_allow_html=True)
     if day=='Thursday': st.markdown('<div class="warning">🦵 Leg Rehab Day: no downward loading. Stop anything that causes knee pain.</div>', unsafe_allow_html=True)
     wdate=st.date_input('Date', date.today()); week=st.number_input('Week',1,52,int(profile.get('week',1)))
@@ -170,7 +170,7 @@ elif page=='Today Workout':
 elif page=='Weekly Plan':
     active=get_active_workouts(); st.markdown('<div class="hero"><h1>Weekly Training Plan</h1><p>Same muscle groups, current 4-week block exercises.</p></div>', unsafe_allow_html=True)
     for day in DAYS:
-        d=active[active.day.eq(day)] if 'day' in active else pd.DataFrame()
+        d=active[active['day'].eq(day)] if 'day' in active else pd.DataFrame()
         if d.empty: continue
         st.markdown(f"<div class='card'><h3>{day} — {d.iloc[0].workout}</h3><span class='badge'>{d.iloc[0].muscle_group}</span>", unsafe_allow_html=True)
         st.dataframe(d[['exercise_order','exercise','equipment','target_sets','target_reps','knee_safe']].rename(columns={'exercise_order':'#','target_sets':'sets','target_reps':'reps'}),hide_index=True,use_container_width=True)
@@ -256,7 +256,7 @@ elif page=='Progress':
     st.markdown('<div class="hero"><h1>Progress Analytics</h1><p>Volume, personal records, knee pain, and consistency.</p></div>', unsafe_allow_html=True)
     if log.empty: st.info('No saved workouts yet.')
     else:
-        c1,c2,c3=st.columns(3); c1.metric('Sessions',log.date.nunique()); c2.metric('Sets',len(log)); c3.metric('Avg Pain',f"{log.pain.mean():.1f}/10")
+        c1,c2,c3=st.columns(3); c1.metric('Sessions',log['date'].nunique()); c2.metric('Sets',len(log)); c3.metric('Avg Pain',f"{log.pain.mean():.1f}/10")
         daily=log.groupby('date',as_index=False)['volume'].sum(); st.plotly_chart(px.line(daily,x='date',y='volume',title='Daily Training Volume'),use_container_width=True)
         best=log.groupby('exercise',as_index=False).agg(best_weight=('weight_lbs','max'),total_volume=('volume','sum')).sort_values('total_volume',ascending=False)
         st.dataframe(best,hide_index=True,use_container_width=True)
