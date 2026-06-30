@@ -1,0 +1,52 @@
+day,workout,muscle_group,exercise,target_sets,target_reps,starting_weight_lbs,notes
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Life Fitness Chest Press,4,10-12,0,
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Incline Chest Press Machine,4,10-12,0,
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Pec Deck Fly,3,15,0,
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Cable Fly,3,15,0,
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Rope Pushdowns,4,15,0,
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Overhead Cable Tricep Extension,3,15,0,
+Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,Ab Crunch Machine,4,20,0,
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Wide Grip Lat Pulldown,4,12,105,"Week 1: 105 lb - 12,12,12,12"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Close Grip Pulldown,3,12,90,"Week 1: 90 lb - 12,12"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Seated Row Machine,4,12,85,"Week 1: 85 lb - 12,12,12"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Straight Arm Pulldown,3,15,45,"Week 1: 45 lb - 12,12,7,7"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Reverse Pec Deck,3,15,55,"Week 1: 55 lb - 12,12,12"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Life Fitness Biceps Curl Machine,4,12,50,"Week 1: 50 lb - 12,12,12"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Cable Hammer Curl,3,15,27.5,"Week 1: 27.5 lb - 15,15,15"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Wrist Curl,3,20,15,"Week 1: 15 lb - 20,20,16"
+Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,Reverse Wrist Curl,3,20,7.5,"Week 1: 7.5 lb - 20,20,20"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Shoulder Press Machine,4,12,60,"Week 1: 60 lb - 12,12,12,7"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Machine Lateral Raise,4,15,40,"Week 1: 40 lb - 15,15,13,12"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Reverse Pec Deck,3,15,70,"Week 1: 70 lb - 15,14,15"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Cable Face Pulls,4,15,27.5,"Week 1: 27.5 lb - 14,15,15,15"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Front Raises,3,15,2.5,"Week 1: 2.5 lb - 15,15,15"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Shrugs,4,15,30,"Week 1: 30 lb - 14,15,15,13"
+Wednesday,Shoulders + Abs,Shoulders + Abs,Rotary Torso Machine,3,15 each side,0,
+Wednesday,Shoulders + Abs,Shoulders + Abs,Ab Crunch Machine,4,20,0,
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Seated Hamstring Curl,4,15,85,"Week 1: 85 lb - 15,15,15,12"
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Hip Abduction Machine,4,15,150,"Week 1: 150 lb - 15,15,15,15"
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Hip Adduction Machine,4,15,150,"Week 1: 150 lb - 15"
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Glute Bridge Machine,3,15,0,If available
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Terminal Knee Extensions,3,20,0,
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Seated Calf Raise,3,20,30,Only if completely pain free
+Thursday,Leg Rehab Day,Leg Rehab / Knee Safe,Core Work,3,sets,0,
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Hammer Strength Chest Press,4,10,115,"Week 1: 115 lb - 12,12,12,8"
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Incline Press,3,10,40,"Week 1: 40 lb - 10,10,10"
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Pec Deck,3,15,85,"Week 1: 85 lb - 15,15,15"
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Cable Fly,3,15,35,"Week 1: 35 lb - 15,15,15"
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Rope Pushdowns,4,15,27.5,"Week 1: 27.5 lb - 15,15,15,15"
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Single Arm Cable Extensions,3,15,10,"Week 1: 10 lb - 15,15,15"
+Friday,Chest + Triceps Heavy,Chest + Triceps Heavy,Ab Crunch Machine,4,20,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Lat Pulldown,3,12,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Machine Row,3,12,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Face Pulls,3,15,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Shoulder Press Machine,3,12,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Machine Lateral Raise,3,15,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Preacher Curl Machine,4,12,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Cable Curl,3,15,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Rope Pushdowns,3,15,0,
+Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,Forearms,3,sets,0,
+Sunday,Recovery Day,Recovery,Swimming,1,recovery,0,
+Sunday,Recovery Day,Recovery,Bike Ride,1,recovery,0,
+Sunday,Recovery Day,Recovery,Sauna,1,recovery,0,
+Sunday,Recovery Day,Recovery,Recovery / Mobility,1,recovery,0,
