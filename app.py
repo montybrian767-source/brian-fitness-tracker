@@ -25,7 +25,12 @@ st.set_page_config('Brian Fitness Tracker Pro v17','🏋️',layout='wide',initi
 if CSS.exists(): st.markdown(f'<style>{CSS.read_text()}</style>', unsafe_allow_html=True)
 
 def read_csv(path, cols=None):
-    if path.exists(): return pd.read_csv(path)
+    # Robust CSV loader for Streamlit Cloud/GitHub uploads.
+    # Normalizes column names so 'Day', ' day ', or 'DAY' all become 'day'.
+    if path.exists():
+        df = pd.read_csv(path)
+        df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
+        return df
     return pd.DataFrame(columns=cols or [])
 
 def save_csv(df,path): path.parent.mkdir(parents=True,exist_ok=True); df.to_csv(path,index=False)
@@ -64,8 +69,15 @@ def get_active_workouts():
     prof=load_profile(); blocks=read_csv(BLOCKS); lib=read_csv(LIB)
     b=int(prof.get('active_block',1))
     df=blocks[blocks['block']==b].copy() if 'block' in blocks.columns else pd.DataFrame()
-    if df.empty: df=read_csv(WORKOUTS).copy(); return df
-    return add_details(df,lib).sort_values(['day','exercise_order'])
+    # If block_templates is missing, empty, or malformed, fall back to workouts.csv.
+    if df.empty or 'day' not in df.columns:
+        df=read_csv(WORKOUTS).copy()
+        if 'exercise_order' not in df.columns:
+            df['exercise_order']=df.groupby('day').cumcount()+1 if 'day' in df.columns else range(1, len(df)+1)
+        return df
+    out=add_details(df,lib)
+    if 'exercise_order' not in out.columns: out['exercise_order']=range(1,len(out)+1)
+    return out.sort_values(['day','exercise_order']) if 'day' in out.columns else out
 
 def best_weight(log, exercise):
     if log.empty or 'exercise' not in log: return 0
