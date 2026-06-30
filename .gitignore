@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+workout_log.csv
+profile.json
+personal_records.csv
+.streamlit/secrets.toml
