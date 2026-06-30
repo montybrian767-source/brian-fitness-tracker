@@ -1,0 +1,92 @@
+block,week_start,week_end,day,workout,muscle_group,exercise_order,exercise
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,1,Life Fitness Chest Press
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,2,Incline Chest Press Machine
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,3,Pec Deck Fly
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,4,Cable Fly
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,5,Rope Pushdowns
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,6,Overhead Cable Tricep Extension
+1,1,4,Monday,Chest + Triceps + Abs,Chest + Triceps + Abs,7,Ab Crunch Machine
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,1,Wide Grip Lat Pulldown
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,2,Close Grip Pulldown
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,3,Seated Row Machine
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,4,Straight Arm Pulldown
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,5,Reverse Pec Deck
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,6,Life Fitness Biceps Curl Machine
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,7,Cable Hammer Curl
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,8,Wrist Curl
+1,1,4,Tuesday,Back + Biceps + Forearms,Back + Biceps + Forearms,9,Reverse Wrist Curl
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,1,Shoulder Press Machine
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,2,Machine Lateral Raise
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,3,Reverse Pec Deck
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,4,Cable Face Pulls
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,5,Front Raises
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,6,Shrugs
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,7,Rotary Torso Machine
+1,1,4,Wednesday,Shoulders + Abs,Shoulders + Abs,8,Ab Crunch Machine
+1,1,4,Thursday,Leg Rehab Day,Leg Rehab,1,Seated Hamstring Curl
+1,1,4,Thursday,Leg Rehab Day,Leg Rehab,2,Hip Abduction Machine
+1,1,4,Thursday,Leg Rehab Day,Leg Rehab,3,Hip Adduction Machine
+1,1,4,Thursday,Leg Rehab Day,Leg Rehab,4,Glute Bridge Machine
+1,1,4,Thursday,Leg Rehab Day,Leg Rehab,5,Terminal Knee Extensions
+1,1,4,Thursday,Leg Rehab Day,Leg Rehab,6,Seated Calf Raise
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,1,Hammer Strength Chest Press
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,2,Incline Chest Press Machine
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,3,Pec Deck Fly
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,4,Cable Fly
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,5,Rope Pushdowns
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,6,Single Arm Cable Extensions
+1,1,4,Friday,Chest + Triceps Heavy,Chest + Triceps + Abs,7,Ab Crunch Machine
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,1,Hammer Strength Incline Press
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,2,Machine Bench Press
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,3,High-to-Low Cable Fly
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,4,Low-to-High Cable Fly
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,5,V-Bar Pushdowns
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,6,Cable Kickbacks
+2,5,8,Monday,Chest + Triceps + Abs - Rotation,Chest + Triceps + Abs,7,Cable Crunch
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,1,Neutral Grip Pulldown
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,2,Chest Supported Row
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,3,Single Arm Machine Row
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,4,Straight Arm Pulldown
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,5,Rear Delt Machine
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,6,Preacher Curl Machine
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,7,Cable Curl
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,8,Wrist Curl
+2,5,8,Tuesday,Back + Biceps + Forearms - Rotation,Back + Biceps + Forearms,9,Reverse Wrist Curl
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,1,Hammer Strength Shoulder Press
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,2,Cable Lateral Raise
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,3,Rear Delt Machine
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,4,Cable Face Pulls
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,5,Shrugs
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,6,Cable Crunch
+2,5,8,Wednesday,Shoulders + Abs - Rotation,Shoulders + Abs,7,Plank
+2,5,8,Thursday,Leg Rehab Day - Rotation,Leg Rehab,1,Seated Hamstring Curl
+2,5,8,Thursday,Leg Rehab Day - Rotation,Leg Rehab,2,Hip Abduction Machine
+2,5,8,Thursday,Leg Rehab Day - Rotation,Leg Rehab,3,Hip Adduction Machine
+2,5,8,Thursday,Leg Rehab Day - Rotation,Leg Rehab,4,Terminal Knee Extensions
+2,5,8,Thursday,Leg Rehab Day - Rotation,Leg Rehab,5,Seated Calf Raise
+2,5,8,Friday,Chest + Triceps Heavy - Rotation,Chest + Triceps + Abs,1,Converging Chest Press
+2,5,8,Friday,Chest + Triceps Heavy - Rotation,Chest + Triceps + Abs,2,Hammer Strength Chest Press
+2,5,8,Friday,Chest + Triceps Heavy - Rotation,Chest + Triceps + Abs,3,High-to-Low Cable Fly
+2,5,8,Friday,Chest + Triceps Heavy - Rotation,Chest + Triceps + Abs,4,V-Bar Pushdowns
+2,5,8,Friday,Chest + Triceps Heavy - Rotation,Chest + Triceps + Abs,5,Single Arm Cable Extensions
+2,5,8,Friday,Chest + Triceps Heavy - Rotation,Chest + Triceps + Abs,6,Ab Crunch Machine
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,1,Lat Pulldown
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,2,Machine Row
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,3,Face Pulls
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,4,Shoulder Press Machine
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,5,Machine Lateral Raise
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,6,Preacher Curl Machine
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,7,Cable Curl
+1,1,4,Saturday,Back + Shoulders + Arms,Back + Shoulders + Arms,8,Rope Pushdowns
+1,1,4,Sunday,Recovery Day,Recovery,1,Swimming
+1,1,4,Sunday,Recovery Day,Recovery,2,Bike Ride
+1,1,4,Sunday,Recovery Day,Recovery,3,Sauna
+2,5,8,Saturday,Back + Shoulders + Arms - Rotation,Back + Shoulders + Arms,1,Neutral Grip Pulldown
+2,5,8,Saturday,Back + Shoulders + Arms - Rotation,Back + Shoulders + Arms,2,Chest Supported Row
+2,5,8,Saturday,Back + Shoulders + Arms - Rotation,Back + Shoulders + Arms,3,Cable Face Pulls
+2,5,8,Saturday,Back + Shoulders + Arms - Rotation,Back + Shoulders + Arms,4,Cable Lateral Raise
+2,5,8,Saturday,Back + Shoulders + Arms - Rotation,Back + Shoulders + Arms,5,Preacher Curl Machine
+2,5,8,Saturday,Back + Shoulders + Arms - Rotation,Back + Shoulders + Arms,6,V-Bar Pushdowns
+2,5,8,Sunday,Recovery Day,Recovery,1,Swimming
+2,5,8,Sunday,Recovery Day,Recovery,2,Bike Ride
+2,5,8,Sunday,Recovery Day,Recovery,3,Sauna
