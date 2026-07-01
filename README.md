@@ -1,10 +1,25 @@
-# Brian Fitness Tracker v15.3 — Pixel Style UI Rebuild
+# Brian Fitness Tracker v16 — Commercial Edition
 
-This build uses custom HTML/CSS cards to get much closer to the mockup layout.
+Production-style Streamlit build with a polished navy sidebar, exercise image cards, right-side summary panels, and stable workout logging.
 
-Run locally:
-```
+## Important data rule
+- `data/workouts.csv` = workout plan
+- `data/workout_log.csv` = completed workout history
+
+Do not delete `data/workout_log.csv` when updating.
+
+## Run locally
+Double-click `run_app.bat` or run:
+
+```bash
 python -m streamlit run app.py
 ```
 
-Important: Completed workouts are saved to `data/workout_log.csv`.
+## Upload to GitHub
+Upload everything inside this folder, including:
+- `.streamlit/`
+- `assets/`
+- `data/`
+- `app.py`
+- `requirements.txt`
+- `README.md`
