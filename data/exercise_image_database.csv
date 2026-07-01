@@ -1,0 +1,25 @@
+exercise,category,equipment,image_file,primary_muscle,secondary_muscle,description,image_path,status
+Shoulder Press Machine,shoulders,Machine,shoulder_press_machine.jpg,Shoulders,Triceps,Machine shoulder press; seated press for delts.,assets/exercises/shoulder_press_machine.jpg,needs_image_file
+Machine Lateral Raise,shoulders,Machine,machine_lateral_raise.jpg,Shoulders,Upper traps,Machine lateral raise.,assets/exercises/machine_lateral_raise.jpg,needs_image_file
+Rear Delt Machine Fly,shoulders,Machine,rear_delt_machine_fly.jpg,Rear delts,Upper back,Reverse pec deck / rear delt fly.,assets/exercises/rear_delt_machine_fly.jpg,needs_image_file
+Dumbbell Shoulder Press,shoulders,Dumbbells,dumbbell_shoulder_press.jpg,Shoulders,Triceps,Seated or standing dumbbell press.,assets/exercises/dumbbell_shoulder_press.jpg,needs_image_file
+Dumbbell Lateral Raise,shoulders,Dumbbells,dumbbell_lateral_raise.jpg,Shoulders,Upper traps,Side lateral raise.,assets/exercises/dumbbell_lateral_raise.jpg,needs_image_file
+Upright Row,shoulders,Cable/Barbell,upright_row.jpg,Shoulders,Traps,Upright row.,assets/exercises/upright_row.jpg,needs_image_file
+Wide Grip Lat Pulldown,back,Cable Machine,wide_grip_lat_pulldown.jpg,Lats,Biceps,Wide grip pulldown.,assets/exercises/wide_grip_lat_pulldown.jpg,needs_image_file
+Seated Row Machine,back,Machine,seated_row_machine.jpg,Middle back,Biceps,Seated row machine.,assets/exercises/seated_row_machine.jpg,needs_image_file
+One Arm Dumbbell Row,back,Dumbbell,one_arm_dumbbell_row.jpg,Lats,Biceps,One-arm dumbbell row.,assets/exercises/one_arm_dumbbell_row.jpg,needs_image_file
+Cable Row,back,Cable Machine,cable_row.jpg,Middle back,Biceps,Seated cable row.,assets/exercises/cable_row.jpg,needs_image_file
+Pull Ups,back,Bodyweight,pull_ups.jpg,Lats,Biceps,Pull-up movement.,assets/exercises/pull_ups.jpg,needs_image_file
+Straight Arm Pulldown,back,Cable Machine,straight_arm_pushdown.jpg,Lats,Triceps,Straight arm pulldown/pushdown.,assets/exercises/straight_arm_pushdown.jpg,needs_image_file
+Chest Press Machine,chest,Machine,chest_press_machine.jpg,Chest,Triceps,Machine chest press.,assets/exercises/chest_press_machine.jpg,needs_image_file
+Dumbbell Bench Press,chest,Dumbbells,dumbbell_bench_press.jpg,Chest,Triceps,Flat dumbbell press.,assets/exercises/dumbbell_bench_press.jpg,needs_image_file
+Incline Dumbbell Press,chest,Dumbbells,incline_dumbbell_press.jpg,Upper chest,Shoulders,Incline dumbbell press.,assets/exercises/incline_dumbbell_press.jpg,needs_image_file
+Pec Deck Fly,chest,Machine,pec_deck_fly.jpg,Chest,Front delts,Pec deck fly.,assets/exercises/pec_deck_fly.jpg,needs_image_file
+Cable Chest Fly,chest,Cable Machine,cable_chest_fly.jpg,Chest,Front delts,Cable fly / crossover.,assets/exercises/cable_chest_fly.jpg,needs_image_file
+Push Ups,chest,Bodyweight,push_ups.jpg,Chest,Triceps,Push-up.,assets/exercises/push_ups.jpg,needs_image_file
+Bicep Curl,arms,Dumbbells/Cable,bicep_curl.jpg,Biceps,Forearms,Standard curl.,assets/exercises/bicep_curl.jpg,needs_image_file
+Hammer Curl,arms,Dumbbells/Cable,hammer_curl.jpg,Brachialis,Forearms,Hammer curl.,assets/exercises/hammer_curl.jpg,needs_image_file
+Tricep Pushdown,arms,Cable Machine,tricep_pushdown.jpg,Triceps,Forearms,Cable triceps pushdown.,assets/exercises/tricep_pushdown.jpg,needs_image_file
+Overhead Tricep Extension,arms,Cable/Dumbbell,overhead_tricep_extension.jpg,Triceps,Shoulders,Overhead triceps extension.,assets/exercises/overhead_tricep_extension.jpg,needs_image_file
+Dumbbell Concentration Curl,arms,Dumbbell,dumbbell_concentration_curl.jpg,Biceps,Forearms,Concentration curl.,assets/exercises/dumbbell_concentration_curl.jpg,needs_image_file
+Skull Crusher,arms,Dumbbell/Barbell,skull_crusher.jpg,Triceps,Forearms,Lying triceps extension.,assets/exercises/skull_crusher.jpg,needs_image_file

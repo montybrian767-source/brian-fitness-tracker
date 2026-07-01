@@ -1,0 +1,27 @@
+workout_exercise_name,library_exercise,image_file,image_path
+Shoulder Press Machine,Shoulder Press Machine,shoulder_press_machine.jpg,assets/exercises/shoulder_press_machine.jpg
+Machine Lateral Raise,Machine Lateral Raise,machine_lateral_raise.jpg,assets/exercises/machine_lateral_raise.jpg
+Reverse Pec Deck,Rear Delt Machine Fly,rear_delt_machine_fly.jpg,assets/exercises/rear_delt_machine_fly.jpg
+Cable Face Pulls,Rear Delt Machine Fly,rear_delt_machine_fly.jpg,assets/exercises/rear_delt_machine_fly.jpg
+Front Raises,Dumbbell Lateral Raise,dumbbell_lateral_raise.jpg,assets/exercises/dumbbell_lateral_raise.jpg
+Shrugs,Upright Row,upright_row.jpg,assets/exercises/upright_row.jpg
+Wide Grip Lat Pulldown,Wide Grip Lat Pulldown,wide_grip_lat_pulldown.jpg,assets/exercises/wide_grip_lat_pulldown.jpg
+Close Grip Pulldown,Wide Grip Lat Pulldown,wide_grip_lat_pulldown.jpg,assets/exercises/wide_grip_lat_pulldown.jpg
+Lat Pulldown,Wide Grip Lat Pulldown,wide_grip_lat_pulldown.jpg,assets/exercises/wide_grip_lat_pulldown.jpg
+Seated Row Machine,Seated Row Machine,seated_row_machine.jpg,assets/exercises/seated_row_machine.jpg
+Machine Row,Seated Row Machine,seated_row_machine.jpg,assets/exercises/seated_row_machine.jpg
+Straight Arm Pulldown,Straight Arm Pulldown,straight_arm_pushdown.jpg,assets/exercises/straight_arm_pushdown.jpg
+Life Fitness Chest Press,Chest Press Machine,chest_press_machine.jpg,assets/exercises/chest_press_machine.jpg
+Hammer Strength Chest Press,Chest Press Machine,chest_press_machine.jpg,assets/exercises/chest_press_machine.jpg
+Incline Chest Press Machine,Incline Dumbbell Press,incline_dumbbell_press.jpg,assets/exercises/incline_dumbbell_press.jpg
+Incline Press,Incline Dumbbell Press,incline_dumbbell_press.jpg,assets/exercises/incline_dumbbell_press.jpg
+Pec Deck Fly,Pec Deck Fly,pec_deck_fly.jpg,assets/exercises/pec_deck_fly.jpg
+Pec Deck,Pec Deck Fly,pec_deck_fly.jpg,assets/exercises/pec_deck_fly.jpg
+Cable Fly,Cable Chest Fly,cable_chest_fly.jpg,assets/exercises/cable_chest_fly.jpg
+Rope Pushdowns,Tricep Pushdown,tricep_pushdown.jpg,assets/exercises/tricep_pushdown.jpg
+Single Arm Cable Extensions,Tricep Pushdown,tricep_pushdown.jpg,assets/exercises/tricep_pushdown.jpg
+Overhead Cable Tricep Extension,Overhead Tricep Extension,overhead_tricep_extension.jpg,assets/exercises/overhead_tricep_extension.jpg
+Life Fitness Biceps Curl Machine,Bicep Curl,bicep_curl.jpg,assets/exercises/bicep_curl.jpg
+Cable Hammer Curl,Hammer Curl,hammer_curl.jpg,assets/exercises/hammer_curl.jpg
+Preacher Curl Machine,Bicep Curl,bicep_curl.jpg,assets/exercises/bicep_curl.jpg
+Cable Curl,Bicep Curl,bicep_curl.jpg,assets/exercises/bicep_curl.jpg
