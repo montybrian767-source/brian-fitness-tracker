@@ -1,40 +1,28 @@
-# Brian Fitness Tracker 2.0 Beta 3 — Exercise Image Library Engine
+# Brian Exercise Image Database v1
 
-This build focuses on the image library foundation.
+This is the database structure for the exercise image library.
 
-## New in Beta 3
+## Files
 
-- Real `assets/exercises/` folder with categorized image subfolders
-- `data/exercise_image_map.csv` maps workout exercises to image files
-- Image Manager page shows which images are connected or missing
-- Image Test page shows all image files Streamlit can find
-- Today’s Workout cards load images automatically
-- Missing images do not crash the app
-- Saves completed workouts to `data/workout_log.csv`
-- Automatic backup before saving workout history
+- `data/exercise_image_database.csv` — master list of exercises and expected image filenames.
+- `data/exercise_image_aliases.csv` — maps your current workout exercise names to the image library.
+- `data/exercise_image_database.sqlite` — same data in SQLite database format.
+- `assets/exercises/` — put the real image files here.
 
-## Required GitHub structure
+## Required image folder
+
+Your GitHub repo should contain:
 
 ```text
-app.py
-requirements.txt
-README.md
 assets/
   exercises/
-    shoulders/
-    back/
-    chest/
-    arms/
-    legs/
-    abs/
-data/
-  workouts.csv
-  workout_log.csv
-  exercise_image_map.csv
+    shoulder_press_machine.jpg
+    machine_lateral_raise.jpg
+    wide_grip_lat_pulldown.jpg
+    ...
 ```
 
-## Install
+## Important
 
-Upload everything inside this folder to GitHub, then reboot/redeploy Streamlit.
-
-Do not delete `data/workout_log.csv` if you already have workout history.
+This database does not contain the real image files yet. It tells the app what filenames to look for.
+Once you generate or crop the real exercise images, place them inside `assets/exercises/` using the exact filenames.
