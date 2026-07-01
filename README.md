@@ -1,23 +1,43 @@
-# Brian Fitness Tracker Pro v17 — Nutrition + Recovery Edition
+# Brian Fitness Tracker v14.5 — Production Data Upgrade
 
-Professional Streamlit fitness tracker with the v16 AI workout rotation engine plus nutrition and recovery tracking.
+This version fixes the data foundation.
 
-## New in v17
-- Nutrition tracker: protein, calories, water, notes
-- Recovery tracker: sleep, knee pain, soreness, swim distance, bike miles, sauna
-- Recovery trend charts
-- Nutrition trend charts
-- Profile goals for protein, water, calories, and sleep
-- Keeps v16 AI 4-week workout rotation engine
-- Keeps LA Fitness exercise library and knee-safe rehab rules
+## Important data separation
 
-## Run locally
-Double-click `run_app.bat`.
+- `data/workouts.csv` = workout plan / template
+- `data/workout_log.csv` = completed workout history
+- `data/profile.csv` = current weight, goal weight, week number
+- `data/personal_records.csv` = best lifts
+- `data/backups/` = automatic workout history backups
 
-## Streamlit Cloud
-Upload the full folder contents to GitHub, then redeploy your Streamlit app.
+## How to run locally
 
-Main file path:
+Double-click:
+
+```bat
+run_app.bat
+```
+
+or run:
+
+```bash
+python -m streamlit run app.py
+```
+
+## GitHub / Streamlit Cloud
+
+Upload the full project structure to GitHub:
+
 ```text
 app.py
+requirements.txt
+README.md
+run_app.bat
+assets/styles.css
+data/workouts.csv
+data/workout_log.csv
+data/profile.csv
+data/personal_records.csv
 ```
+
+Do not delete `data/workout_log.csv` after you start saving workouts.

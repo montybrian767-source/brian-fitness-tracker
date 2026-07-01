@@ -1,307 +1,391 @@
 from __future__ import annotations
-import random, socket
+
+import io
+import socket
+import zipfile
 from datetime import date, datetime
 from pathlib import Path
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-APP_DIR=Path(__file__).parent
-DATA=APP_DIR/'data'
-CSS=APP_DIR/'assets/css/styles.css'
-WORKOUTS=DATA/'workouts.csv'
-LIB=DATA/'exercise_library.csv'
-BLOCKS=DATA/'block_templates.csv'
-LOG=DATA/'workout_log.csv'
-ACTIVE=DATA/'active_block.csv'
-PROFILE=DATA/'profile.csv'
-NUTRITION=DATA/'nutrition_log.csv'
-RECOVERY=DATA/'recovery_log.csv'
-BODY=DATA/'body_stats.csv'
-DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-DO_NOT=['Leg Press','Squats','Lunges','Running','Stair Climber','Smith Machine Squats','Heavy Lower Body Loading']
+APP_DIR = Path(__file__).parent
+DATA_DIR = APP_DIR / "data"
+ASSETS_DIR = APP_DIR / "assets"
+CSS_FILE = ASSETS_DIR / "styles.css"
 
-st.set_page_config('Brian Fitness Tracker Pro v17','🏋️',layout='wide',initial_sidebar_state='expanded')
-if CSS.exists(): st.markdown(f'<style>{CSS.read_text()}</style>', unsafe_allow_html=True)
+WORKOUTS_FILE = DATA_DIR / "workouts.csv"          # workout template / plan
+LOG_FILE = DATA_DIR / "workout_log.csv"            # completed workout history
+PR_FILE = DATA_DIR / "personal_records.csv"
+PROFILE_FILE = DATA_DIR / "profile.csv"
+BACKUP_DIR = DATA_DIR / "backups"
 
-def read_csv(path, cols=None):
-    # Robust CSV loader for Streamlit Cloud/GitHub uploads.
-    # Normalizes column names so 'Day', ' day ', or 'DAY' all become 'day'.
+DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+DO_NOT_DO = ["Leg Press", "Squats", "Lunges", "Running", "Stair Climber", "Smith Machine Squats", "Heavy Lower Body Loading"]
+
+REQUIRED_LOG_COLS = [
+    "date", "saved_at", "week", "day", "workout", "muscle_group", "exercise",
+    "set_number", "weight_lbs", "reps", "pain", "notes", "volume"
+]
+
+st.set_page_config(
+    page_title="Brian Fitness Tracker v14.5",
+    page_icon="🏋️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+DEFAULT_CSS = """
+:root{--bg:#f4f7fb;--navy:#0f2747;--blue:#2563eb;--teal:#0f766e;--gold:#d69e2e;--green:#16a34a;--red:#dc2626;--text:#1e293b;--muted:#64748b;--card:#ffffff;--line:#dbe3ef}.stApp{background:var(--bg);color:var(--text)}.block-container{padding-top:1rem;max-width:1180px}h1,h2,h3{color:var(--navy)!important}.hero{background:linear-gradient(135deg,#0f2747,#1d4ed8);padding:24px;border-radius:24px;color:white;margin-bottom:18px;box-shadow:0 12px 32px rgba(15,39,71,.18)}.hero h1{color:white!important;margin:0;font-size:2rem!important}.hero p{color:#dbeafe;margin:.35rem 0 0}.card{background:white;border:1px solid var(--line);border-radius:22px;padding:18px;margin:12px 0;box-shadow:0 8px 24px rgba(15,39,71,.07)}.day-card{background:white;border:1px solid var(--line);border-left:7px solid var(--blue);border-radius:20px;padding:16px;margin:10px 0}.day-title{font-size:1.1rem;font-weight:900;color:var(--navy)}.muted{color:var(--muted);font-weight:650}.badge{display:inline-block;border-radius:999px;padding:6px 11px;font-size:.8rem;font-weight:900;background:#e0edff;color:#174ea6;margin:3px}.badge-gold{background:#fff7db;color:#8a6100}.exercise-card{background:white;border:1px solid var(--line);border-radius:24px;padding:18px;margin:14px 0;border-left:8px solid var(--teal);box-shadow:0 8px 24px rgba(15,39,71,.08)}.exercise-name{font-size:1.45rem;font-weight:950;color:var(--navy);line-height:1.15}.volume-box{background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:12px;color:var(--navy);font-weight:900}.stButton>button{border-radius:14px;min-height:3rem;font-weight:900;border:1px solid var(--line)}.stNumberInput input{font-weight:900;text-align:center;color:#0f172a;background:#f8fafc}.stTextInput input{color:#0f172a;background:#f8fafc}.success-button button{background:var(--green)!important;color:white!important;border:none!important}[data-testid="stMetric"]{background:white;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 5px 16px rgba(15,39,71,.06)}[data-testid="stMetricValue"]{color:var(--navy)!important;font-weight:950}.warning{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:18px;padding:14px;font-weight:850}.safe{background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;border-radius:18px;padding:14px;font-weight:850}.danger{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:18px;padding:14px;font-weight:850}@media(max-width:700px){.block-container{padding-left:.6rem;padding-right:.6rem}.hero h1{font-size:1.45rem!important}.exercise-name{font-size:1.25rem}}
+"""
+
+st.markdown(f"<style>{CSS_FILE.read_text() if CSS_FILE.exists() else DEFAULT_CSS}</style>", unsafe_allow_html=True)
+
+
+def normalize_cols(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
+    return df
+
+
+def read_csv(path: Path, columns: list[str] | None = None) -> pd.DataFrame:
     if path.exists():
-        df = pd.read_csv(path)
-        df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
-        return df
-    return pd.DataFrame(columns=cols or [])
+        try:
+            df = pd.read_csv(path)
+            df = normalize_cols(df)
+        except Exception:
+            df = pd.DataFrame(columns=columns or [])
+    else:
+        df = pd.DataFrame(columns=columns or [])
+    if columns:
+        for col in columns:
+            if col not in df.columns:
+                df[col] = None
+        df = df[columns]
+    return df
 
-def save_csv(df,path): path.parent.mkdir(parents=True,exist_ok=True); df.to_csv(path,index=False)
 
-def lan_ip():
+def save_csv(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
+
+
+def ensure_data_files() -> None:
+    DATA_DIR.mkdir(exist_ok=True)
+    BACKUP_DIR.mkdir(exist_ok=True)
+    if not LOG_FILE.exists():
+        save_csv(pd.DataFrame(columns=REQUIRED_LOG_COLS), LOG_FILE)
+    if not PR_FILE.exists():
+        save_csv(pd.DataFrame(columns=["exercise", "best_weight_lbs", "best_reps", "best_volume", "date", "saved_at"]), PR_FILE)
+    if not PROFILE_FILE.exists():
+        save_csv(pd.DataFrame([
+            {"key": "current_weight", "value": 0},
+            {"key": "goal_weight", "value": 0},
+            {"key": "week", "value": 1},
+        ]), PROFILE_FILE)
+
+
+def load_profile() -> dict:
+    ensure_data_files()
+    default = {"current_weight": 0.0, "goal_weight": 0.0, "week": 1}
+    df = read_csv(PROFILE_FILE)
+    if not df.empty and {"key", "value"}.issubset(df.columns):
+        for _, row in df.iterrows():
+            default[str(row["key"])] = row["value"]
+    for k in ["current_weight", "goal_weight"]:
+        try:
+            default[k] = float(default[k])
+        except Exception:
+            default[k] = 0.0
     try:
-        s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); s.connect(('8.8.8.8',80)); ip=s.getsockname()[0]; s.close(); return ip
-    except Exception: return 'YOUR-COMPUTER-IP'
-
-def load_profile():
-    df=read_csv(PROFILE)
-    default={'current_weight':0.0,'goal_weight':0.0,'week':1,'active_block':1,'protein_days':0,'swims':0,'bike_miles':0.0,'daily_protein_goal':180,'daily_water_goal':100,'daily_calorie_goal':2200,'sleep_goal':7.5}
-    if not df.empty:
-        for _,r in df.iterrows():
-            default[str(r['key'])]=r['value']
-    for k in ['current_weight','goal_weight','bike_miles','daily_protein_goal','daily_water_goal','daily_calorie_goal','sleep_goal']:
-        try: default[k]=float(default[k])
-        except: default[k]=0.0
-    for k in ['week','active_block','protein_days','swims']:
-        try: default[k]=int(float(default[k]))
-        except: default[k]=1 if k in ['week','active_block'] else 0
+        default["week"] = int(float(default["week"]))
+    except Exception:
+        default["week"] = 1
     return default
 
-def save_profile(p): save_csv(pd.DataFrame([{'key':k,'value':v} for k,v in p.items()]), PROFILE)
 
-def add_details(block_df, lib):
-    if block_df.empty: return block_df
-    m=block_df.merge(lib, on='exercise', how='left', suffixes=('','_lib'))
-    for c in ['target_sets','target_reps','starting_weight_lbs','notes','equipment','knee_safe']:
-        if c not in m.columns: m[c]=''
-        libcol=c+'_lib'
-        if libcol in m.columns: m[c]=m[c].fillna(m[libcol])
-    return m
+def save_profile(profile: dict) -> None:
+    save_csv(pd.DataFrame([{"key": k, "value": v} for k, v in profile.items()]), PROFILE_FILE)
 
-def get_active_workouts():
-    prof=load_profile(); blocks=read_csv(BLOCKS); lib=read_csv(LIB)
-    b=int(prof.get('active_block',1))
-    df=blocks[blocks['block']==b].copy() if 'block' in blocks.columns else pd.DataFrame()
-    # If block_templates is missing, empty, or malformed, fall back to workouts.csv.
-    if df.empty or 'day' not in df.columns:
-        df=read_csv(WORKOUTS).copy()
-        if 'exercise_order' not in df.columns:
-            df['exercise_order']=df.groupby('day').cumcount()+1 if 'day' in df.columns else range(1, len(df)+1)
-        return df
-    out=add_details(df,lib)
-    if 'exercise_order' not in out.columns: out['exercise_order']=range(1,len(out)+1)
-    return out.sort_values(['day','exercise_order']) if 'day' in out.columns else out
 
-def best_weight(log, exercise):
-    if log.empty or 'exercise' not in log: return 0
-    ex=log[log.exercise==exercise]
-    return float(ex.weight_lbs.max()) if not ex.empty and 'weight_lbs' in ex else 0
+def get_lan_ip() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "YOUR-COMPUTER-IP"
 
-def last_set(log, exercise, set_number, fallback):
-    if log.empty: return fallback,0
-    ex=log[(log.exercise==exercise)&(log.set_number==set_number)].copy()
-    if ex.empty: return fallback,0
-    ex['saved_at_dt']=pd.to_datetime(ex.get('saved_at',ex['date']),errors='coerce')
-    r=ex.sort_values('saved_at_dt').iloc[-1]
-    return float(r.weight_lbs), int(r.reps)
 
-def generate_next_block(block_number:int, weeks:int=4):
-    lib=read_csv(LIB)
-    base=read_csv(WORKOUTS)
-    rows=[]
-    day_plan={
-      'Monday':('Chest + Triceps + Abs',['Chest','Triceps','Abs'],[3,2,1]),
-      'Tuesday':('Back + Biceps + Forearms',['Back','Biceps','Forearms'],[4,2,2]),
-      'Wednesday':('Shoulders + Abs',['Shoulders','Abs'],[5,2]),
-      'Thursday':('Leg Rehab Day',['Leg Rehab','Abs'],[5,1]),
-      'Friday':('Chest + Triceps Heavy',['Chest','Triceps','Abs'],[4,2,1]),
-      'Saturday':('Back + Shoulders + Arms',['Back','Shoulders','Biceps','Triceps','Forearms'],[2,2,2,1,1]),
-      'Sunday':('Recovery',['Recovery'],[4]),
-    }
-    prior=set(read_csv(BLOCKS)['exercise'].astype(str).tolist()) if BLOCKS.exists() else set()
-    for day,(workout,groups,counts) in day_plan.items():
-        order=1
-        for group,count in zip(groups,counts):
-            gdf=lib[lib.muscle_group.eq(group)].copy()
-            if day=='Thursday': gdf=gdf[gdf.knee_safe.astype(str).str.lower().eq('yes')]
-            if gdf.empty: continue
-            # Prefer exercises not already in current template, but allow repeats when needed.
-            preferred=gdf[~gdf.exercise.astype(str).isin(prior)]
-            pool=preferred if len(preferred)>=min(count,len(gdf)) else gdf
-            chosen=pool.sample(n=min(count,len(pool)), random_state=block_number*17+order) if len(pool)>0 else pd.DataFrame()
-            for _,r in chosen.iterrows():
-                rows.append({'block':block_number,'week_start':(block_number-1)*weeks+1,'week_end':block_number*weeks,'day':day,'workout':workout,'muscle_group':' + '.join(groups),'exercise_order':order,'exercise':r.exercise})
-                order+=1
-    return pd.DataFrame(rows)
+def workouts_df() -> pd.DataFrame:
+    df = read_csv(WORKOUTS_FILE)
+    required = ["day", "workout", "muscle_group", "exercise", "target_sets", "target_reps", "starting_weight_lbs", "notes"]
+    for col in required:
+        if col not in df.columns:
+            df[col] = ""
+    df["target_sets"] = pd.to_numeric(df["target_sets"], errors="coerce").fillna(3).astype(int)
+    df["starting_weight_lbs"] = pd.to_numeric(df["starting_weight_lbs"], errors="coerce").fillna(0.0)
+    return df
 
-profile=load_profile(); log=read_csv(LOG)
-st.sidebar.markdown('## 🏋️ Pro v17')
-page=st.sidebar.radio('Navigation',['Dashboard','Today Workout','Weekly Plan','AI Rotation','Nutrition','Recovery','Progress','History','Profile','Phone Setup'])
-st.sidebar.caption('Nutrition • Recovery • AI Rotation • LA Fitness')
 
-if page=='Dashboard':
-    st.markdown('<div class="hero"><h1>Brian Fitness Tracker Pro v17</h1><p>Nutrition + Recovery Dashboard · AI Workout Rotation Engine · 4-week blocks · investor-style dashboard</p></div>', unsafe_allow_html=True)
-    active=get_active_workouts(); today=date.today().strftime('%A')
-    today_df=active[active['day'].eq(today)] if 'day' in active else pd.DataFrame()
-    c1,c2,c3,c4=st.columns(4)
-    c1.metric('Active Block', f"Block {profile.get('active_block',1)}")
-    c2.metric('Current Week', profile.get('week',1))
-    c3.metric('Gym Sessions', log['date'].nunique() if not log.empty and 'date' in log else 0)
-    c4.metric('Total Volume', f"{log.volume.sum():,.0f} lbs" if not log.empty and 'volume' in log else '0 lbs')
+def log_df() -> pd.DataFrame:
+    df = read_csv(LOG_FILE, REQUIRED_LOG_COLS)
+    for col in ["week", "set_number", "reps", "pain"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+    for col in ["weight_lbs", "volume"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+    return df
+
+
+def backup_data() -> Path:
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = BACKUP_DIR / f"workout_log_backup_{stamp}.csv"
+    if LOG_FILE.exists():
+        backup_file.write_bytes(LOG_FILE.read_bytes())
+    else:
+        save_csv(pd.DataFrame(columns=REQUIRED_LOG_COLS), backup_file)
+    return backup_file
+
+
+def update_personal_records(new_rows: pd.DataFrame) -> None:
+    if new_rows.empty:
+        return
+    records = read_csv(PR_FILE)
+    if records.empty:
+        records = pd.DataFrame(columns=["exercise", "best_weight_lbs", "best_reps", "best_volume", "date", "saved_at"])
+    for exercise, group in new_rows.groupby("exercise"):
+        max_weight = float(group["weight_lbs"].max())
+        max_volume = float(group["volume"].max())
+        best_reps = int(group.loc[group["weight_lbs"].idxmax(), "reps"])
+        existing = records[records["exercise"] == exercise]
+        if existing.empty:
+            records = pd.concat([records, pd.DataFrame([{
+                "exercise": exercise, "best_weight_lbs": max_weight, "best_reps": best_reps,
+                "best_volume": max_volume, "date": str(group.iloc[0]["date"]), "saved_at": datetime.now().isoformat(timespec="seconds")
+            }])], ignore_index=True)
+        else:
+            idx = existing.index[0]
+            old = float(records.loc[idx, "best_weight_lbs"] or 0)
+            if max_weight > old:
+                records.loc[idx, ["best_weight_lbs", "best_reps", "best_volume", "date", "saved_at"]] = [
+                    max_weight, best_reps, max_volume, str(group.iloc[0]["date"]), datetime.now().isoformat(timespec="seconds")
+                ]
+    save_csv(records, PR_FILE)
+
+
+def last_set_value(log: pd.DataFrame, exercise: str, set_number: int, fallback_weight: float) -> tuple[float, int]:
+    if log.empty:
+        return fallback_weight, 0
+    ex = log[(log["exercise"] == exercise) & (log["set_number"] == set_number)].copy()
+    if ex.empty:
+        return fallback_weight, 0
+    ex["_dt"] = pd.to_datetime(ex["saved_at"], errors="coerce")
+    row = ex.sort_values("_dt").iloc[-1]
+    return float(row["weight_lbs"]), int(row["reps"])
+
+
+def make_export_zip() -> bytes:
+    files = [WORKOUTS_FILE, LOG_FILE, PROFILE_FILE, PR_FILE, DATA_DIR / "nutrition_log.csv", DATA_DIR / "recovery_log.csv", DATA_DIR / "body_stats.csv"]
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        for path in files:
+            if path.exists():
+                z.write(path, arcname=f"data/{path.name}")
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+ensure_data_files()
+profile = load_profile()
+workouts = workouts_df()
+log = log_df()
+
+st.sidebar.markdown("## 🏋️ Brian Fitness")
+st.sidebar.caption("v14.5 Production Data Upgrade")
+page = st.sidebar.radio(
+    "Navigation",
+    ["Dashboard", "Today Workout", "Weekly Plan", "Progress", "History", "Data Safety", "Profile", "Phone Setup"],
+)
+
+if page == "Dashboard":
+    today = date.today().strftime("%A")
+    today_plan = workouts[workouts["day"] == today]
+    total_sessions = log["date"].nunique() if not log.empty else 0
+    total_volume = log["volume"].sum() if not log.empty else 0
+    avg_pain = log["pain"].mean() if not log.empty else 0
+
+    st.markdown('<div class="hero"><h1>Brian Fitness Tracker v14.5</h1><p>Stable production base · workout plan separated from workout history</p></div>', unsafe_allow_html=True)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Current Weight", f"{profile.get('current_weight', 0):.1f} lbs")
+    c2.metric("Goal Weight", f"{profile.get('goal_weight', 0):.1f} lbs")
+    c3.metric("Gym Sessions", total_sessions)
+    c4.metric("Total Volume", f"{total_volume:,.0f} lbs")
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader(f"Today's Mission: {today}")
-    if not today_df.empty:
-        st.markdown(f"### {today_df.iloc[0].workout}")
-        st.markdown(f"<span class='badge'>{today_df.iloc[0].muscle_group}</span> <span class='badge badge-gold'>{len(today_df)} exercises</span>", unsafe_allow_html=True)
-        st.write(', '.join(today_df.exercise.astype(str).tolist()[:8]))
-    else: st.info('No workout scheduled today.')
+    if today_plan.empty:
+        st.info("No workout scheduled today.")
+    else:
+        st.markdown(f"### {today_plan.iloc[0]['workout']}")
+        st.markdown(f"<span class='badge'>{today_plan.iloc[0]['muscle_group']}</span> <span class='badge badge-gold'>{len(today_plan)} exercises</span>", unsafe_allow_html=True)
+        st.write(", ".join(today_plan["exercise"].astype(str).tolist()))
     st.markdown('</div>', unsafe_allow_html=True)
-    st.subheader('Weekly Plan')
-    for day in DAYS:
-        d=active[active['day'].eq(day)] if 'day' in active else pd.DataFrame()
-        if d.empty: continue
-        st.markdown(f"<div class='day-card'><div class='day-title'>{day} — {d.iloc[0].workout}</div><div class='muted'>{d.iloc[0].muscle_group} · {len(d)} exercises</div></div>", unsafe_allow_html=True)
 
-elif page=='Today Workout':
-    active=get_active_workouts(); lib=read_csv(LIB)
-    day=st.selectbox('Workout Day',DAYS,index=DAYS.index(date.today().strftime('%A')) if date.today().strftime('%A') in DAYS else 0)
-    d=active[active['day'].eq(day)].reset_index(drop=True)
-    st.markdown(f'<div class="hero"><h1>{day}</h1><p>{d.iloc[0].workout if not d.empty else "Workout"}</p></div>', unsafe_allow_html=True)
-    if day=='Thursday': st.markdown('<div class="warning">🦵 Leg Rehab Day: no downward loading. Stop anything that causes knee pain.</div>', unsafe_allow_html=True)
-    wdate=st.date_input('Date', date.today()); week=st.number_input('Week',1,52,int(profile.get('week',1)))
-    saved=[]
-    for i,r in d.iterrows():
-        ex=str(r.exercise); sets=int(float(r.get('target_sets',3) or 3)); default=float(r.get('starting_weight_lbs',0) or 0); reps_target=str(r.get('target_reps','12'))
+    if avg_pain >= 5:
+        st.markdown(f'<div class="danger">🦵 Knee pain average is {avg_pain:.1f}/10. Keep rehab conservative.</div>', unsafe_allow_html=True)
+    elif total_sessions:
+        st.markdown(f'<div class="safe">Average knee pain: {avg_pain:.1f}/10</div>', unsafe_allow_html=True)
+
+elif page == "Today Workout":
+    day = st.selectbox("Workout Day", DAYS, index=DAYS.index(date.today().strftime("%A")) if date.today().strftime("%A") in DAYS else 0)
+    day_plan = workouts[workouts["day"] == day].reset_index(drop=True)
+    workout_name = day_plan.iloc[0]["workout"] if not day_plan.empty else "Workout"
+    muscle_group = day_plan.iloc[0]["muscle_group"] if not day_plan.empty else ""
+
+    st.markdown(f'<div class="hero"><h1>{day}</h1><p>{workout_name} · {muscle_group}</p></div>', unsafe_allow_html=True)
+    if day == "Thursday":
+        st.markdown('<div class="warning">🦵 Leg Rehab Day: no downward loading. Stop anything that causes knee pain.</div>', unsafe_allow_html=True)
+    if day == "Sunday":
+        st.markdown('<div class="safe">Recovery Day: swimming, bike, sauna, mobility, and recovery.</div>', unsafe_allow_html=True)
+
+    cdate, cweek = st.columns(2)
+    workout_date = cdate.date_input("Date", value=date.today())
+    week = cweek.number_input("Week", min_value=1, max_value=52, value=int(profile.get("week", 1)))
+
+    pending_rows = []
+    if day_plan.empty:
+        st.warning("No exercises found for this day in data/workouts.csv")
+    for i, row in day_plan.iterrows():
+        exercise = str(row["exercise"])
+        target_sets = int(row["target_sets"])
+        target_reps = str(row["target_reps"])
+        start_weight = float(row["starting_weight_lbs"])
+
         st.markdown('<div class="exercise-card">', unsafe_allow_html=True)
-        st.markdown(f'<div class="exercise-name">{i+1}. {ex}</div>', unsafe_allow_html=True)
-        st.markdown(f"<span class='badge'>Target: {sets} × {reps_target}</span> <span class='badge badge-green'>{r.get('equipment','LA Fitness')}</span>", unsafe_allow_html=True)
-        note=st.text_input('Notes',key=f'note_{day}_{i}',placeholder='felt strong, too easy, knee okay')
-        pain=st.slider('Pain score',0,10,0,key=f'pain_{day}_{i}')
-        for s in range(1,sets+1):
-            lw,lr=last_set(log,ex,s,default)
-            a,b,c=st.columns([1,1,1])
-            wt=a.number_input(f'Set {s} lbs',min_value=0.0,value=float(lw),step=2.5,key=f'w_{day}_{i}_{s}')
-            rp=b.number_input(f'Set {s} reps',min_value=0,value=int(lr or 0),step=1,key=f'r_{day}_{i}_{s}')
-            c.markdown(f"<div class='volume-box'>Volume<br><span style='font-size:1.35rem'>{wt*rp:,.0f} lbs</span></div>", unsafe_allow_html=True)
-            if rp>0: saved.append({'date':str(wdate),'saved_at':datetime.now().isoformat(timespec='seconds'),'week':int(week),'block':int(profile.get('active_block',1)),'day':day,'workout':r.workout,'muscle_group':r.muscle_group,'exercise':ex,'set_number':s,'weight_lbs':wt,'reps':rp,'pain':pain,'notes':note,'volume':wt*rp})
-        bw=best_weight(log,ex)
-        if bw: st.caption(f'Personal best: {bw:g} lbs')
-        st.markdown('</div>', unsafe_allow_html=True)
-    if st.button('💾 Save Workout', type='primary'):
-        if saved:
-            old=read_csv(LOG); save_csv(pd.concat([old,pd.DataFrame(saved)],ignore_index=True),LOG); st.success(f'Saved {len(saved)} sets. Great job.'); st.balloons()
-        else: st.warning('Enter reps for at least one set first.')
+        st.markdown(f'<div class="exercise-name">🏋️ {exercise}</div>', unsafe_allow_html=True)
+        st.markdown(f"<span class='badge'>Target: {target_sets} × {target_reps}</span>", unsafe_allow_html=True)
+        if str(row.get("notes", "")).strip():
+            st.caption(str(row.get("notes", "")))
 
-elif page=='Weekly Plan':
-    active=get_active_workouts(); st.markdown('<div class="hero"><h1>Weekly Training Plan</h1><p>Same muscle groups, current 4-week block exercises.</p></div>', unsafe_allow_html=True)
+        top1, top2 = st.columns(2)
+        sets = top1.number_input("Sets", min_value=1, max_value=8, value=target_sets, key=f"sets_{day}_{i}")
+        pain = top2.number_input("Pain 0-10", min_value=0, max_value=10, value=0, key=f"pain_{day}_{i}")
+        notes = st.text_input("Notes", value="", key=f"notes_{day}_{i}", placeholder="Example: felt good, knee okay, too heavy")
+
+        for set_num in range(1, int(sets) + 1):
+            last_w, last_r = last_set_value(log, exercise, set_num, start_weight)
+            st.markdown(f"**Set {set_num}** · last: {last_w:g} lbs × {last_r} reps")
+            c1, c2, c3 = st.columns([1, 1, 1])
+            weight = c1.number_input("lbs", min_value=0.0, step=2.5, value=float(last_w), key=f"w_{day}_{i}_{set_num}")
+            reps = c2.number_input("reps", min_value=0, step=1, value=int(last_r), key=f"r_{day}_{i}_{set_num}")
+            volume = float(weight) * int(reps)
+            c3.markdown(f'<div class="volume-box">Volume<br><span style="font-size:1.35rem">{volume:,.0f} lbs</span></div>', unsafe_allow_html=True)
+            if reps > 0:
+                pending_rows.append({
+                    "date": str(workout_date),
+                    "saved_at": datetime.now().isoformat(timespec="seconds"),
+                    "week": int(week),
+                    "day": day,
+                    "workout": workout_name,
+                    "muscle_group": muscle_group,
+                    "exercise": exercise,
+                    "set_number": int(set_num),
+                    "weight_lbs": float(weight),
+                    "reps": int(reps),
+                    "pain": int(pain),
+                    "notes": notes,
+                    "volume": volume,
+                })
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="success-button">', unsafe_allow_html=True)
+    if st.button("💾 SAVE WORKOUT TO workout_log.csv"):
+        if not pending_rows:
+            st.warning("Enter reps for at least one set before saving.")
+        else:
+            backup_data()
+            new_rows = pd.DataFrame(pending_rows)
+            current_log = log_df()
+            updated = pd.concat([current_log, new_rows], ignore_index=True)
+            save_csv(updated, LOG_FILE)
+            update_personal_records(new_rows)
+            st.success(f"Saved {len(new_rows)} sets to data/workout_log.csv. Your workout plan file was not changed.")
+            st.balloons()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+elif page == "Weekly Plan":
+    st.markdown('<div class="hero"><h1>Weekly Plan</h1><p>Muscle groups and exercises from data/workouts.csv</p></div>', unsafe_allow_html=True)
     for day in DAYS:
-        d=active[active['day'].eq(day)] if 'day' in active else pd.DataFrame()
-        if d.empty: continue
-        st.markdown(f"<div class='card'><h3>{day} — {d.iloc[0].workout}</h3><span class='badge'>{d.iloc[0].muscle_group}</span>", unsafe_allow_html=True)
-        st.dataframe(d[['exercise_order','exercise','equipment','target_sets','target_reps','knee_safe']].rename(columns={'exercise_order':'#','target_sets':'sets','target_reps':'reps'}),hide_index=True,use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        d = workouts[workouts["day"] == day]
+        if d.empty:
+            continue
+        st.markdown(f'<div class="day-card"><div class="day-title">{day} — {d.iloc[0]["workout"]}</div><div class="muted">{d.iloc[0]["muscle_group"]} · {len(d)} exercises</div></div>', unsafe_allow_html=True)
+        with st.expander(f"View {day} exercises"):
+            st.dataframe(d[["exercise", "target_sets", "target_reps", "starting_weight_lbs", "notes"]], use_container_width=True, hide_index=True)
 
-elif page=='AI Rotation':
-    st.markdown('<div class="hero"><h1>AI Workout Rotation Engine</h1><p>Create a fresh 4-week block using LA Fitness exercises while keeping your muscle-group schedule.</p></div>', unsafe_allow_html=True)
-    blocks=read_csv(BLOCKS); max_block=int(blocks.block.max()) if not blocks.empty and 'block' in blocks else 1
-    c1,c2=st.columns(2); c1.metric('Available Blocks',max_block); c2.metric('Active Block',profile.get('active_block',1))
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader('Generate Next 4-Week Block')
-    st.write('This keeps Monday chest/triceps, Tuesday back/biceps, Thursday rehab, etc., but rotates exercises from your LA Fitness library.')
-    if st.button('⚡ Generate Next Block', type='primary'):
-        nb=max_block+1; new=generate_next_block(nb); save_csv(pd.concat([blocks,new],ignore_index=True),BLOCKS); st.success(f'Generated Block {nb}. Go to Profile to make it active, or use the button below.'); st.dataframe(new,hide_index=True,use_container_width=True)
-    if st.button('✅ Make Newest Block Active'):
-        blocks=read_csv(BLOCKS); profile['active_block']=int(blocks.block.max()); save_profile(profile); st.success(f"Active block is now Block {profile['active_block']}.")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.subheader('Block Preview')
-    chosen=st.selectbox('Choose block to preview', sorted(blocks.block.unique()) if not blocks.empty else [1], index=0)
-    prev=add_details(blocks[blocks.block.eq(chosen)], read_csv(LIB)) if not blocks.empty else pd.DataFrame()
-    if not prev.empty: st.dataframe(prev[['day','workout','muscle_group','exercise_order','exercise','equipment','target_sets','target_reps','knee_safe']],hide_index=True,use_container_width=True)
-
-
-elif page=='Nutrition':
-    st.markdown('<div class="hero"><h1>Nutrition Tracker</h1><p>Track protein, calories, water, and daily notes.</p></div>', unsafe_allow_html=True)
-    nlog=read_csv(NUTRITION)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader('Today\'s Nutrition')
-    ndate=st.date_input('Nutrition Date', date.today(), key='nutrition_date')
-    c1,c2,c3=st.columns(3)
-    protein=c1.number_input('Protein grams',0,400,int(float(profile.get('daily_protein_goal',180))),step=5)
-    calories=c2.number_input('Calories',0,6000,int(float(profile.get('daily_calorie_goal',2200))),step=50)
-    water=c3.number_input('Water ounces',0,300,int(float(profile.get('daily_water_goal',100))),step=5)
-    nnotes=st.text_input('Nutrition notes',placeholder='Example: hit protein, low appetite, meal prep')
-    if st.button('Save Nutrition', type='primary'):
-        row=pd.DataFrame([{'date':str(ndate),'saved_at':datetime.now().isoformat(timespec='seconds'),'protein_g':protein,'calories':calories,'water_oz':water,'notes':nnotes}])
-        save_csv(pd.concat([nlog,row],ignore_index=True),NUTRITION); st.success('Nutrition saved.')
-    st.markdown('</div>', unsafe_allow_html=True)
-    nlog=read_csv(NUTRITION)
-    if not nlog.empty:
-        c1,c2,c3=st.columns(3)
-        c1.metric('Avg Protein', f"{nlog.protein_g.mean():.0f} g")
-        c2.metric('Avg Water', f"{nlog.water_oz.mean():.0f} oz")
-        c3.metric('Days Logged', len(nlog.date.unique()))
-        daily=nlog.groupby('date',as_index=False).agg(protein_g=('protein_g','sum'),water_oz=('water_oz','sum'),calories=('calories','sum'))
-        st.plotly_chart(px.line(daily,x='date',y=['protein_g','water_oz'],title='Protein and Water Trend'),use_container_width=True)
-        st.dataframe(nlog.sort_values('date',ascending=False),hide_index=True,use_container_width=True)
+elif page == "Progress":
+    st.markdown('<div class="hero"><h1>Progress</h1><p>Charts come from data/workout_log.csv</p></div>', unsafe_allow_html=True)
+    if log.empty:
+        st.info("No completed workouts saved yet.")
     else:
-        st.info('No nutrition logs yet.')
+        daily = log.groupby("date", as_index=False).agg(volume=("volume", "sum"), sets=("set_number", "count"), avg_pain=("pain", "mean"))
+        st.plotly_chart(px.line(daily, x="date", y="volume", title="Daily Training Volume"), use_container_width=True)
+        best = log.groupby("exercise", as_index=False).agg(best_weight_lbs=("weight_lbs", "max"), total_volume=("volume", "sum"), total_sets=("set_number", "count")).sort_values("total_volume", ascending=False)
+        st.subheader("Exercise Progress")
+        st.dataframe(best, use_container_width=True, hide_index=True)
 
-elif page=='Recovery':
-    st.markdown('<div class="hero"><h1>Recovery & Knee Tracker</h1><p>Track sleep, soreness, knee pain, swims, bike miles, sauna, and recovery quality.</p></div>', unsafe_allow_html=True)
-    rlog=read_csv(RECOVERY)
+elif page == "History":
+    st.markdown('<div class="hero"><h1>Workout History</h1><p>Completed workouts saved separately from your workout plan</p></div>', unsafe_allow_html=True)
+    if log.empty:
+        st.info("No workout history yet.")
+    else:
+        st.dataframe(log.sort_values(["date", "saved_at", "exercise", "set_number"], ascending=[False, False, True, True]), use_container_width=True, hide_index=True)
+        st.download_button("Download workout_log.csv", log.to_csv(index=False).encode("utf-8"), "workout_log.csv", "text/csv")
+
+elif page == "Data Safety":
+    st.markdown('<div class="hero"><h1>Data Safety</h1><p>Protect workout history before every update</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader('Today\'s Recovery')
-    rdate=st.date_input('Recovery Date', date.today(), key='recovery_date')
-    c1,c2,c3=st.columns(3)
-    sleep=c1.number_input('Sleep hours',0.0,16.0,float(profile.get('sleep_goal',7.5)),step=.25)
-    knee=c2.slider('Knee pain 0-10',0,10,0)
-    soreness=c3.slider('Body soreness 0-10',0,10,3)
-    c4,c5,c6=st.columns(3)
-    swim=c4.number_input('Swim distance',0.0,10000.0,0.0,step=50.0)
-    bike=c5.number_input('Bike miles',0.0,200.0,0.0,step=.5)
-    sauna=c6.checkbox('Sauna completed')
-    rnotes=st.text_input('Recovery notes',placeholder='Example: knee felt good, used sauna, easy swim')
-    if st.button('Save Recovery', type='primary'):
-        row=pd.DataFrame([{'date':str(rdate),'saved_at':datetime.now().isoformat(timespec='seconds'),'sleep_hours':sleep,'knee_pain':knee,'soreness':soreness,'swim_distance':swim,'bike_miles':bike,'sauna':sauna,'notes':rnotes}])
-        save_csv(pd.concat([rlog,row],ignore_index=True),RECOVERY); st.success('Recovery saved.')
+    st.subheader("File Status")
+    st.write(f"✅ Workout plan: `{WORKOUTS_FILE}`")
+    st.write(f"✅ Workout history: `{LOG_FILE}`")
+    st.write(f"✅ Backups folder: `{BACKUP_DIR}`")
+    st.write(f"Saved workout rows: **{len(log)}**")
     st.markdown('</div>', unsafe_allow_html=True)
-    rlog=read_csv(RECOVERY)
-    if not rlog.empty:
-        c1,c2,c3=st.columns(3)
-        c1.metric('Avg Sleep', f"{rlog.sleep_hours.mean():.1f} hrs")
-        c2.metric('Avg Knee Pain', f"{rlog.knee_pain.mean():.1f}/10")
-        c3.metric('Bike Miles', f"{rlog.bike_miles.sum():.1f}")
-        daily=rlog.groupby('date',as_index=False).agg(sleep_hours=('sleep_hours','mean'),knee_pain=('knee_pain','mean'),soreness=('soreness','mean'))
-        st.plotly_chart(px.line(daily,x='date',y=['sleep_hours','knee_pain','soreness'],title='Recovery Trend'),use_container_width=True)
-        st.dataframe(rlog.sort_values('date',ascending=False),hide_index=True,use_container_width=True)
-    else:
-        st.info('No recovery logs yet.')
 
-elif page=='Progress':
-    st.markdown('<div class="hero"><h1>Progress Analytics</h1><p>Volume, personal records, knee pain, and consistency.</p></div>', unsafe_allow_html=True)
-    if log.empty: st.info('No saved workouts yet.')
-    else:
-        c1,c2,c3=st.columns(3); c1.metric('Sessions',log['date'].nunique()); c2.metric('Sets',len(log)); c3.metric('Avg Pain',f"{log.pain.mean():.1f}/10")
-        daily=log.groupby('date',as_index=False)['volume'].sum(); st.plotly_chart(px.line(daily,x='date',y='volume',title='Daily Training Volume'),use_container_width=True)
-        best=log.groupby('exercise',as_index=False).agg(best_weight=('weight_lbs','max'),total_volume=('volume','sum')).sort_values('total_volume',ascending=False)
-        st.dataframe(best,hide_index=True,use_container_width=True)
+    c1, c2 = st.columns(2)
+    if c1.button("Create Backup Now"):
+        path = backup_data()
+        st.success(f"Backup created: {path.name}")
+    c2.download_button("Export All Data ZIP", make_export_zip(), "brian_fitness_tracker_data_backup.zip", "application/zip")
 
-elif page=='History':
-    st.markdown('<div class="hero"><h1>Workout History</h1><p>Saved workout sets and export.</p></div>', unsafe_allow_html=True)
-    if log.empty: st.info('No history yet.')
-    else:
-        st.dataframe(log.sort_values(['date','saved_at'],ascending=False),hide_index=True,use_container_width=True)
-        st.download_button('Download workout_log.csv',log.to_csv(index=False).encode(),file_name='workout_log.csv')
+    uploaded = st.file_uploader("Import workout_log.csv backup", type=["csv"])
+    if uploaded is not None:
+        imported = pd.read_csv(uploaded)
+        imported = normalize_cols(imported)
+        for col in REQUIRED_LOG_COLS:
+            if col not in imported.columns:
+                imported[col] = None
+        if st.button("Import and Replace workout_log.csv"):
+            backup_data()
+            save_csv(imported[REQUIRED_LOG_COLS], LOG_FILE)
+            st.success("Imported workout_log.csv. A backup of the previous file was created first.")
 
-elif page=='Profile':
-    st.markdown('<div class="hero"><h1>Profile & Settings</h1><p>Body goals, active block, and monthly scoreboard.</p></div>', unsafe_allow_html=True)
-    blocks=read_csv(BLOCKS); maxb=int(blocks.block.max()) if not blocks.empty and 'block' in blocks else 1
-    profile['current_weight']=st.number_input('Current Weight',0.0,600.0,float(profile.get('current_weight',0)),step=.5)
-    profile['goal_weight']=st.number_input('Goal Weight',0.0,600.0,float(profile.get('goal_weight',0)),step=.5)
-    profile['week']=st.number_input('Current Week',1,52,int(profile.get('week',1)))
-    profile['active_block']=st.number_input('Active Training Block',1,maxb,int(profile.get('active_block',1)))
-    profile['swims']=st.number_input('Swims Completed',0,100,int(profile.get('swims',0)))
-    profile['bike_miles']=st.number_input('Bike Miles',0.0,10000.0,float(profile.get('bike_miles',0)),step=.5)
-    profile['protein_days']=st.number_input('Protein Goal Days',0,31,int(profile.get('protein_days',0)))
-    profile['daily_protein_goal']=st.number_input('Daily Protein Goal (g)',0.0,400.0,float(profile.get('daily_protein_goal',180)),step=5.0)
-    profile['daily_water_goal']=st.number_input('Daily Water Goal (oz)',0.0,300.0,float(profile.get('daily_water_goal',100)),step=5.0)
-    profile['daily_calorie_goal']=st.number_input('Daily Calorie Goal',0.0,6000.0,float(profile.get('daily_calorie_goal',2200)),step=50.0)
-    profile['sleep_goal']=st.number_input('Sleep Goal (hours)',0.0,16.0,float(profile.get('sleep_goal',7.5)),step=.25)
-    if st.button('Save Profile', type='primary'): save_profile(profile); st.success('Profile saved.')
-    st.subheader('Knee Safety')
-    for x in DO_NOT: st.markdown(f"<span class='badge badge-red'>Do not: {x}</span>", unsafe_allow_html=True)
+elif page == "Profile":
+    st.markdown('<div class="hero"><h1>Profile</h1><p>Basic monthly scoreboard settings</p></div>', unsafe_allow_html=True)
+    profile["current_weight"] = st.number_input("Current Weight", min_value=0.0, value=float(profile.get("current_weight", 0.0)), step=0.5)
+    profile["goal_weight"] = st.number_input("Goal Weight", min_value=0.0, value=float(profile.get("goal_weight", 0.0)), step=0.5)
+    profile["week"] = st.number_input("Week #", min_value=1, max_value=52, value=int(profile.get("week", 1)))
+    if st.button("Save Profile"):
+        save_profile(profile)
+        st.success("Profile saved.")
 
-elif page=='Phone Setup':
-    st.markdown('<div class="hero"><h1>Phone Setup</h1><p>Use locally on Wi-Fi or online through Streamlit Cloud.</p></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader('Local same Wi-Fi link')
-    st.code(f'http://{lan_ip()}:8501')
-    st.write('For gym use away from home, upload this v16 folder to GitHub and redeploy on Streamlit Cloud.')
-    st.markdown('</div>', unsafe_allow_html=True)
+elif page == "Phone Setup":
+    st.markdown('<div class="hero"><h1>Phone Setup</h1><p>Use Streamlit Cloud for gym use outside your home Wi-Fi</p></div>', unsafe_allow_html=True)
+    ip = get_lan_ip()
+    st.write("Local Wi-Fi link:")
+    st.code(f"http://{ip}:8501")
+    st.write("For LA Fitness use, deploy this same GitHub repository on Streamlit Cloud and open the Streamlit URL on your phone.")
