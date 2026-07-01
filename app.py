@@ -51,9 +51,24 @@ def save_log(df):
     except Exception: pass
 
 def img_src(ex):
-    p=EXDIR / f"{slug(ex)}.svg"
-    if not p.exists(): p=EXDIR / 'muscle_groups.svg'
-    data=base64.b64encode(p.read_bytes()).decode()
+    # Robust image loader: never crash if an image/folder is missing on GitHub/Streamlit.
+    fallback_svg = """<svg xmlns='http://www.w3.org/2000/svg' width='320' height='220' viewBox='0 0 320 220'>
+      <rect width='320' height='220' rx='22' fill='#eef6ff'/>
+      <circle cx='160' cy='68' r='24' fill='#0f5df4' opacity='.18'/>
+      <path d='M72 130h176M98 105v50M222 105v50' stroke='#0b1f3f' stroke-width='10' stroke-linecap='round'/>
+      <path d='M135 135c18 20 32 20 50 0' stroke='#0f5df4' stroke-width='8' stroke-linecap='round' fill='none'/>
+      <text x='160' y='190' text-anchor='middle' font-family='Arial' font-size='20' font-weight='800' fill='#0b1f3f'>Exercise Image</text>
+    </svg>"""
+    try:
+        p = EXDIR / f"{slug(ex)}.svg"
+        if not p.exists():
+            p = EXDIR / 'muscle_groups.svg'
+        if p.exists():
+            data = base64.b64encode(p.read_bytes()).decode()
+        else:
+            data = base64.b64encode(fallback_svg.encode('utf-8')).decode()
+    except Exception:
+        data = base64.b64encode(fallback_svg.encode('utf-8')).decode()
     return f"data:image/svg+xml;base64,{data}"
 
 def last_note(df, ex):
@@ -88,7 +103,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 def sidebar_cards(total_ex, total_sets, total_vol):
-    muscle_img=base64.b64encode((EXDIR/'muscle_groups.svg').read_bytes()).decode()
+    muscle_img = img_src('muscle_groups')
     st.markdown(f"""
     <div class='side-card'><div class='side-title'>Workout Summary</div>
       <div class='summary-row'><span>Exercises</span><span>{total_ex}</span></div>
@@ -97,7 +112,7 @@ def sidebar_cards(total_ex, total_sets, total_vol):
       <div class='summary-row'><span>Workout Time</span><span>—</span></div>
       <div class='summary-row'><span>Calories (Est.)</span><span>—</span></div>
     </div>
-    <div class='side-card'><div class='side-title'>Muscle Groups</div><img src='data:image/svg+xml;base64,{muscle_img}' style='width:100%;border-radius:12px'></div>
+    <div class='side-card'><div class='side-title'>Muscle Groups</div><img src='{muscle_img}' style='width:100%;border-radius:12px'></div>
     <div class='side-card'><div class='side-title'>Quick Actions</div><div class='action'>＋ ADD EXERCISE</div><div class='action'>↕ REORDER EXERCISES</div><div class='action danger'>🗑 CLEAR WORKOUT</div></div>
     <div class='side-card'><div class='side-title'>Tips</div><p style='color:#263a58;font-weight:700'>Focus on controlled movements and mind-muscle connection for best results.</p></div>
     """, unsafe_allow_html=True)
