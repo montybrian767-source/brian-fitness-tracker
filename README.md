@@ -1,43 +1,20 @@
-# Brian Fitness Tracker v14.5 — Production Data Upgrade
+# Brian Fitness Tracker v15 — Visual Exercise UI
 
-This version fixes the data foundation.
+Professional visual workout tracker built from the stable v14.5 data foundation.
 
-## Important data separation
+## New in v15
+- Visual exercise cards with small exercise thumbnails
+- Professional navy sidebar + white card UI
+- Workout plan and workout history remain separated
+- Completed workouts save to `data/workout_log.csv`
+- Exercise image placeholder system in the app, ready for real images later
+- Data safety export/backup page retained
 
-- `data/workouts.csv` = workout plan / template
-- `data/workout_log.csv` = completed workout history
-- `data/profile.csv` = current weight, goal weight, week number
-- `data/personal_records.csv` = best lifts
-- `data/backups/` = automatic workout history backups
+## Run locally
+Double-click `run_app.bat`.
 
-## How to run locally
+## Streamlit Cloud
+Upload all files/folders to GitHub, then reboot/redeploy your Streamlit app.
 
-Double-click:
-
-```bat
-run_app.bat
-```
-
-or run:
-
-```bash
-python -m streamlit run app.py
-```
-
-## GitHub / Streamlit Cloud
-
-Upload the full project structure to GitHub:
-
-```text
-app.py
-requirements.txt
-README.md
-run_app.bat
-assets/styles.css
-data/workouts.csv
-data/workout_log.csv
-data/profile.csv
-data/personal_records.csv
-```
-
-Do not delete `data/workout_log.csv` after you start saving workouts.
+## Important data rule
+Do not delete or overwrite `data/workout_log.csv`. That file stores your completed workouts.
