@@ -1,16 +1,11 @@
-# Brian Fitness Tracker 2.0 Beta 1.1 — Image Wiring Fix
+# Brian Fitness Tracker 2.0 — Alpha Commercial Build
 
-This build fixes the exercise image system.
+Commercial-style rebuild with real exercise image library.
 
-## What changed
-- Adds real image files into `assets/exercises/`
-- Adds `data/exercise_image_map.csv`
-- Updates `data/workouts.csv` with image filenames
-- Adds an **Image Test** page so you can verify which images are found
-- App no longer depends on `.svg` filenames only; it checks `.png`, `.svg`, `.jpg`, `.jpeg`, `.webp`
-- Keeps workout history saved to `data/workout_log.csv`
+Upload everything inside this folder to GitHub, including `assets/exercises/` and `data/exercise_image_map.csv`.
 
-## Install
-Upload all files/folders inside this folder to GitHub, then Streamlit > Manage app > Reboot/Redeploy.
+Run locally:
 
-Important: if you already have workout history, do not overwrite your existing `data/workout_log.csv` with an empty file.
+```bash
+python -m streamlit run app.py
+```

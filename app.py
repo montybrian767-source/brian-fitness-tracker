@@ -1,566 +1,174 @@
-
 from __future__ import annotations
-import csv, json, re, socket
-from datetime import date, datetime, timedelta
+import base64, socket
+from datetime import date, datetime
 from pathlib import Path
-
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
 APP_DIR = Path(__file__).parent
 DATA_DIR = APP_DIR / "data"
-ASSETS_DIR = APP_DIR / "assets"
-EXERCISE_IMG_DIR = ASSETS_DIR / "exercises"
-STYLE_FILE = APP_DIR / "styles" / "theme.css"
+ASSET_DIR = APP_DIR / "assets"
+EXERCISE_IMG_DIR = ASSET_DIR / "exercises"
 WORKOUTS_FILE = DATA_DIR / "workouts.csv"
 LOG_FILE = DATA_DIR / "workout_log.csv"
-PROFILE_FILE = DATA_DIR / "profile.csv"
 IMAGE_MAP_FILE = DATA_DIR / "exercise_image_map.csv"
-IMAGE_ALIAS_FILE = DATA_DIR / "exercise_image_aliases.csv"
+DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-LOG_COLUMNS = ["date","saved_at","week","day","workout","muscle_group","exercise","set_number","weight_lbs","reps","pain","rpe","notes","volume"]
-DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+st.set_page_config(page_title="Brian Fitness Tracker 2.0", page_icon="🏋️", layout="wide", initial_sidebar_state="expanded")
 
-st.set_page_config(page_title="Brian Fitness Tracker 2.0 Beta 1.1", page_icon="🏋️", layout="wide", initial_sidebar_state="expanded")
+st.markdown("""
+<style>
+:root{--muted:#9fb3cc;--blue:#1d6fff;--green:#4ade80;}
+[data-testid="stAppViewContainer"]{background:linear-gradient(120deg,#07111f 0%,#0a1627 55%,#0d1b2f 100%);color:#f4f8ff;}
+.block-container{padding:1.2rem 1.5rem 6rem 1.5rem;max-width:1450px;}
+[data-testid="stSidebar"]{background:linear-gradient(180deg,#061225,#08203b)!important;border-right:1px solid #1d3557;}
+[data-testid="stSidebar"] *{color:#f8fbff!important;}
+h1{font-size:2.15rem!important;font-weight:950!important;letter-spacing:-.03em;color:#f8fbff!important;} h2,h3{font-weight:900!important;color:#f8fbff!important;}
+.stButton>button{border-radius:12px!important;border:1px solid #294666!important;background:#101f36!important;color:#f8fbff!important;font-weight:850!important;min-height:42px;}
+.stNumberInput input,.stTextInput input,.stDateInput input,.stSelectbox div[data-baseweb="select"]{background:#0b1728!important;color:#f8fbff!important;border:1px solid #263a58!important;border-radius:10px!important;}
+[data-testid="stMetric"]{background:linear-gradient(180deg,#111f34,#0c1829);border:1px solid #283c5a;border-radius:16px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.22);}
+[data-testid="stMetricLabel"]{color:#9fb3cc!important;font-weight:850!important;} [data-testid="stMetricValue"]{color:#f8fbff!important;font-weight:950!important;}
+.nav-title{font-size:1.8rem;font-weight:950;line-height:1.0;margin:14px 0 2px 0;color:#fff}.nav-sub{font-weight:900;color:#57f26d!important;letter-spacing:.05em;margin-bottom:20px}.version-pill{display:inline-block;padding:8px 12px;border:1px solid #2454a6;border-radius:999px;background:#0b2a54;color:#74b6ff;font-weight:900;font-size:.9rem;margin-bottom:22px}.side-card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;margin-top:18px}.safe-dot{display:inline-flex;width:32px;height:32px;align-items:center;justify-content:center;border-radius:999px;background:#22c55e;color:white;font-weight:900;margin-right:10px}.muted{color:#9fb3cc}.hero-card{background:linear-gradient(180deg,#0f1d31,#0b1626);border:1px solid #263a58;border-radius:18px;padding:18px;box-shadow:0 15px 45px rgba(0,0,0,.22);margin-bottom:14px}.pill{display:inline-block;padding:7px 11px;border-radius:999px;border:1px solid #274766;background:#0b2545;color:#8fc4ff;font-weight:900;font-size:.8rem;margin-right:6px}.pill.green{background:#0b3820;border-color:#1e8a45;color:#7af49b}.exercise-card{background:linear-gradient(180deg,#101e33,#0b1626);border:1px solid #283c5a;border-radius:18px;margin-bottom:18px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.24)}.exercise-body{display:grid;grid-template-columns:270px minmax(0,1fr);gap:18px;padding:16px}@media(max-width:850px){.exercise-body{grid-template-columns:1fr}.ex-img{height:220px!important}}.ex-img{width:100%;height:230px;object-fit:cover;border-radius:14px;border:1px solid #31435e;background:#0b1728}.ex-title{font-size:1.35rem;font-weight:950;color:#fff;margin-bottom:6px}.ex-top{display:flex;justify-content:space-between;align-items:start;gap:12px}.how-btn{border:1px solid #2c65c7;color:#9cc8ff;background:#0b2545;padding:10px 13px;border-radius:10px;font-weight:900;white-space:nowrap}.set-head{color:#9fb3cc;font-size:.78rem;font-weight:900;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:6px}.set-num{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:999px;background:#1d6fff;color:white;font-weight:900}.vol{font-weight:950;color:#4ade80}.summary-card{background:linear-gradient(180deg,#111f34,#0b1626);border:1px solid #283c5a;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 18px 50px rgba(0,0,0,.22)}.summary-title{font-weight:950;color:#fff;font-size:1.1rem;margin-bottom:12px}.summary-row{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 0;color:#dbe8fb}.green-text{color:#4ade80!important;font-weight:950}.bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:999;background:linear-gradient(90deg,#061225,#0b1728);border-top:1px solid #263a58;padding:12px 20px;display:flex;gap:18px;align-items:center;justify-content:center;color:#fff;box-shadow:0 -10px 40px rgba(0,0,0,.35)}.progress-line{height:8px;background:#243855;border-radius:999px;overflow:hidden;min-width:260px;max-width:520px;flex:1}.progress-fill{height:100%;background:linear-gradient(90deg,#1d6fff,#4ade80);border-radius:999px}.catalog-card{background:#101e33;border:1px solid #283c5a;border-radius:16px;padding:12px;margin-bottom:16px}
+</style>
+""", unsafe_allow_html=True)
 
+def normalize(s:str)->str:
+    return ''.join(ch.lower() for ch in str(s) if ch.isalnum())
 
-def load_css():
-    if STYLE_FILE.exists():
-        st.markdown(f"<style>{STYLE_FILE.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
-
-
-def slug(s: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", str(s).lower()).strip("_")
-
-
-def ensure_files():
-    DATA_DIR.mkdir(exist_ok=True)
-    EXERCISE_IMG_DIR.mkdir(parents=True, exist_ok=True)
-    if not LOG_FILE.exists():
-        pd.DataFrame(columns=LOG_COLUMNS).to_csv(LOG_FILE, index=False)
-
-
-def load_workouts() -> pd.DataFrame:
-    df = pd.read_csv(WORKOUTS_FILE)
-    df.columns = [c.strip().lower() for c in df.columns]
-    required = ["day","workout","muscle_group","exercise","target_sets","target_reps"]
-    for c in required:
-        if c not in df.columns:
-            df[c] = "" if c not in ["target_sets"] else 3
-    if "image_file" not in df.columns:
-        df["image_file"] = df["exercise"].map(lambda x: slug(x) + ".svg")
+@st.cache_data
+def load_workouts():
+    df=pd.read_csv(WORKOUTS_FILE)
+    df.columns=[c.strip() for c in df.columns]
     return df
 
+@st.cache_data
+def load_img_map():
+    if IMAGE_MAP_FILE.exists():
+        m=pd.read_csv(IMAGE_MAP_FILE)
+        e_col='exercise_name' if 'exercise_name' in m.columns else m.columns[0]
+        i_col='image_file' if 'image_file' in m.columns else m.columns[1]
+        return {normalize(r[e_col]):str(r[i_col]) for _,r in m.iterrows()}
+    return {}
 
-def load_log() -> pd.DataFrame:
-    ensure_files()
-    try:
-        df = pd.read_csv(LOG_FILE)
-    except Exception:
-        df = pd.DataFrame(columns=LOG_COLUMNS)
-    for c in LOG_COLUMNS:
-        if c not in df.columns:
-            df[c] = 0 if c in ["week","set_number","weight_lbs","reps","pain","rpe","volume"] else ""
-    return df[LOG_COLUMNS]
+def load_log():
+    if LOG_FILE.exists(): return pd.read_csv(LOG_FILE)
+    return pd.DataFrame(columns=['date','saved_at','day','workout','exercise','set_number','weight_lbs','reps','rpe','pain','notes','volume'])
 
+def save_log(df):
+    DATA_DIR.mkdir(exist_ok=True); df.to_csv(LOG_FILE,index=False)
 
-def backup_log():
-    ensure_files()
-    backup_dir = DATA_DIR / "backups"
-    backup_dir.mkdir(exist_ok=True)
-    if LOG_FILE.exists():
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        target = backup_dir / f"workout_log_backup_{stamp}.csv"
-        target.write_bytes(LOG_FILE.read_bytes())
-        return target
+def find_img(exercise):
+    fname=load_img_map().get(normalize(exercise))
+    if fname:
+        p=EXERCISE_IMG_DIR/fname
+        if p.exists(): return p
+    for p in EXERCISE_IMG_DIR.glob('*'):
+        if normalize(p.stem)==normalize(exercise): return p
     return None
 
+def image_html(path:Path|None,title:str):
+    if path and path.exists():
+        b64=base64.b64encode(path.read_bytes()).decode()
+        ext=path.suffix.lower().replace('.','') or 'png'
+        mime='svg+xml' if ext=='svg' else ext
+        return f'<img class="ex-img" src="data:image/{mime};base64,{b64}" />'
+    safe=title.replace('<','').replace('>','')
+    return f'<div class="ex-img" style="display:flex;align-items:center;justify-content:center;text-align:center;background:linear-gradient(135deg,#142842,#0b1728);"><div><div style="font-size:42px">🏋️</div><div style="font-weight:950;color:white">{safe}</div><div class="muted">image coming soon</div></div></div>'
 
-def save_rows(rows: list[dict]):
-    ensure_files()
-    backup_log()
-    df = load_log()
-    new = pd.DataFrame(rows)
-    for c in LOG_COLUMNS:
-        if c not in new.columns:
-            new[c] = 0 if c in ["week","set_number","weight_lbs","reps","pain","rpe","volume"] else ""
-    out = pd.concat([df, new[LOG_COLUMNS]], ignore_index=True)
-    out.to_csv(LOG_FILE, index=False)
+def last_best(log, exercise):
+    if log.empty or 'exercise' not in log.columns: return 0
+    ex=log[log.exercise.astype(str)==exercise]
+    if ex.empty: return 0
+    return float(pd.to_numeric(ex.get('weight_lbs',0),errors='coerce').fillna(0).max())
 
+workouts=load_workouts(); log=load_log()
+with st.sidebar:
+    st.markdown('<div class="nav-title">🏋️ BRIAN</div><div class="nav-sub">FITNESS TRACKER 2.0</div><div class="version-pill">Alpha Commercial</div>', unsafe_allow_html=True)
+    page=st.radio('Navigation',['Dashboard','Today’s Workout','Gym Mode','Weekly Plan','Progress','History','Exercise Library','Image Test','Data & Export'], label_visibility='collapsed')
+    st.markdown('<div class="side-card"><div><span class="safe-dot">✓</span><b>All data is safe</b></div><div class="muted" style="margin-top:8px">workout_log.csv</div></div>', unsafe_allow_html=True)
+    if LOG_FILE.exists(): st.download_button('☁️ Export Backup', LOG_FILE.read_bytes(), 'workout_log_backup.csv','text/csv',use_container_width=True)
 
-def load_profile() -> dict:
-    profile = {"current_weight": 0, "goal_weight": 0, "week": 1}
-    if PROFILE_FILE.exists():
-        try:
-            p = pd.read_csv(PROFILE_FILE)
-            for _, r in p.iterrows():
-                profile[str(r.get("key"))] = r.get("value")
-        except Exception:
-            pass
-    return profile
+if page=='Dashboard':
+    st.title('Dashboard')
+    vol=pd.to_numeric(log.get('volume',0),errors='coerce').fillna(0).sum() if not log.empty else 0
+    c1,c2,c3,c4=st.columns(4); c1.metric('Sessions', log['date'].nunique() if not log.empty and 'date' in log else 0); c2.metric('Total Volume',f'{vol:,.0f} lbs'); c3.metric('Build','2.0 Alpha'); c4.metric('Status','Ready')
+    st.markdown('### Weekly Plan')
+    cols=st.columns(7)
+    for i,d in enumerate(DAY_ORDER):
+        dd=workouts[workouts.day==d]; name=dd.workout.iloc[0] if not dd.empty else 'Recovery'
+        cols[i].markdown(f'<div class="summary-card"><b>{d[:3].upper()}</b><br><span class="muted">{name}</span><br><span class="pill green">{len(dd)} exercises</span></div>',unsafe_allow_html=True)
 
-
-def latest_set(log: pd.DataFrame, exercise: str, set_number: int, fallback_weight=0.0):
-    if log.empty:
-        return float(fallback_weight), 0
-    ex = log[(log["exercise"].astype(str) == exercise) & (log["set_number"].astype(int) == set_number)].copy()
-    if ex.empty:
-        return float(fallback_weight), 0
-    ex["saved_at_dt"] = pd.to_datetime(ex["saved_at"], errors="coerce")
-    ex = ex.sort_values("saved_at_dt")
-    r = ex.iloc[-1]
-    return float(r.get("weight_lbs", fallback_weight) or fallback_weight), int(r.get("reps", 0) or 0)
-
-
-def best_weight(log: pd.DataFrame, exercise: str) -> float:
-    if log.empty: return 0.0
-    ex = log[log["exercise"].astype(str) == exercise]
-    if ex.empty: return 0.0
-    return float(pd.to_numeric(ex["weight_lbs"], errors="coerce").max() or 0)
-
-
-def load_image_map() -> dict:
-    mapping = {}
-    for f in [IMAGE_MAP_FILE, IMAGE_ALIAS_FILE]:
-        if f.exists():
-            try:
-                m = pd.read_csv(f)
-                m.columns = [c.strip().lower() for c in m.columns]
-                for _, r in m.iterrows():
-                    ex = str(r.get("exercise", r.get("alias", ""))).strip()
-                    img = str(r.get("image_file", r.get("file", ""))).strip()
-                    if ex and img:
-                        mapping[ex.lower()] = img
-                        mapping[slug(ex)] = img
-            except Exception:
-                pass
-    return mapping
-
-
-def img_path(row) -> Path | None:
-    exercise = str(row.get("exercise", "exercise")).strip()
-    candidates = []
-    file = str(row.get("image_file", "") or "").strip()
-    if file:
-        candidates.append(file)
-    mapping = load_image_map()
-    for key in [exercise.lower(), slug(exercise)]:
-        if key in mapping:
-            candidates.append(mapping[key])
-    base = slug(exercise)
-    candidates += [base + ext for ext in [".png", ".svg", ".jpg", ".jpeg", ".webp"]]
-    seen = set()
-    for cand in candidates:
-        cand = Path(str(cand)).name
-        if not cand or cand in seen:
-            continue
-        seen.add(cand)
-        p = EXERCISE_IMG_DIR / cand
-        if p.exists():
-            return p
-    return None
-
-
-def exercise_cues(exercise: str) -> list[str]:
-    e = exercise.lower()
-    if "pulldown" in e:
-        return ["Keep chest tall and shoulders down.", "Pull elbows toward your ribs.", "Control the weight on the way up."]
-    if "row" in e:
-        return ["Sit tall and brace your core.", "Pull with elbows, not hands.", "Squeeze shoulder blades together."]
-    if "chest" in e or "press" in e:
-        return ["Set shoulders back before pressing.", "Keep wrists stacked over elbows.", "Stop 1–2 reps before failure."]
-    if "curl" in e:
-        return ["Keep elbows still.", "Use full control, no swinging.", "Squeeze at the top."]
-    if "tricep" in e or "pushdown" in e or "extension" in e:
-        return ["Lock elbows near your sides.", "Move only at the elbow.", "Pause at the bottom."]
-    if "leg" in e or "hip" in e or "hamstring" in e or "calf" in e:
-        return ["Protect the right knee.", "Use pain-free range only.", "Slow and controlled reps."]
-    return ["Use controlled form.", "Breathe through each rep.", "Stop if pain appears."]
-
-
-def workout_totals(rows: list[dict]) -> dict:
-    return {
-        "sets": len(rows),
-        "volume": sum(float(r.get("volume", 0) or 0) for r in rows),
-        "exercises": len(set(r.get("exercise", "") for r in rows)),
-        "avg_rpe": round(sum(float(r.get("rpe", 0) or 0) for r in rows) / len(rows), 1) if rows else 0,
-    }
-
-
-def phone_ip() -> str:
-    try:
-        s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(("8.8.8.8",80)); ip=s.getsockname()[0]; s.close(); return ip
-    except Exception: return "YOUR-COMPUTER-IP"
-
-
-def sidebar(page_options):
-    st.sidebar.markdown('<div class="brand"><div class="brand-title">BRIAN FITNESS<br/>TRACKER 2.0</div><div class="brand-sub">Commercial Beta 1.1</div></div>', unsafe_allow_html=True)
-    page = st.sidebar.radio("Navigation", page_options, label_visibility="collapsed")
-    st.sidebar.markdown('<div class="sidebar-card"><b>Data Status</b><br/><span style="color:#a8c7ff!important">Workout history saves to</span><br/><code>data/workout_log.csv</code></div>', unsafe_allow_html=True)
-    with st.sidebar.expander("📱 Phone Link"):
-        st.code(f"http://{phone_ip()}:8501")
-    return page
-
-
-def stat_cards(log):
-    sessions = log["date"].nunique() if not log.empty else 0
-    volume = pd.to_numeric(log["volume"], errors="coerce").sum() if not log.empty else 0
-    sets = len(log) if not log.empty else 0
-    prs = log.groupby("exercise")["weight_lbs"].max().shape[0] if not log.empty else 0
-    cols = st.columns(4)
-    cols[0].markdown(f'<div class="big-stat"><div class="label">Sessions</div><div class="value">{sessions}</div></div>', unsafe_allow_html=True)
-    cols[1].markdown(f'<div class="big-stat"><div class="label">Total Volume</div><div class="value">{volume:,.0f}</div></div>', unsafe_allow_html=True)
-    cols[2].markdown(f'<div class="big-stat"><div class="label">Sets Saved</div><div class="value">{sets}</div></div>', unsafe_allow_html=True)
-    cols[3].markdown(f'<div class="big-stat"><div class="label">Tracked Lifts</div><div class="value">{prs}</div></div>', unsafe_allow_html=True)
-
-
-def dashboard(workouts, log):
-    today = date.today().strftime("%A")
-    active = workouts[workouts["day"] == today]
-    if active.empty:
-        active = workouts[workouts["day"] == "Monday"]
-        today = "Monday"
-    workout = active["workout"].iloc[0] if not active.empty else "Workout"
-    muscle = active["muscle_group"].iloc[0] if not active.empty else "Training"
-    st.markdown(f'<div class="hero"><h1>Today\'s Mission</h1><p>{today} • {workout} • {muscle}</p></div>', unsafe_allow_html=True)
-    stat_cards(log)
-    score = alpha_score(log)
-    st.markdown(f'<div class="coach-strip">🔥 Comeback Score: <b>{score}/100</b> • Alpha 3 tracks PRs, muscle volume, and coaching signals.</div>', unsafe_allow_html=True)
-    st.markdown("### Weekly Plan")
-    cols = st.columns(7)
-    for i, day in enumerate(DAY_ORDER):
-        d = workouts[workouts["day"]==day]
-        if d.empty: continue
-        wk = d["workout"].iloc[0]
-        mg = d["muscle_group"].iloc[0]
-        count = len(d)
-        cols[i].markdown(f'<div class="card"><div class="pill">{day[:3]}</div><div class="card-title" style="margin-top:10px">{wk}</div><div class="muted">{mg}</div><br/><b>{count}</b> exercises</div>', unsafe_allow_html=True)
-    if not log.empty:
-        daily = log.groupby("date", as_index=False)["volume"].sum()
-        st.plotly_chart(px.bar(daily, x="date", y="volume", title="Volume by Day"), use_container_width=True)
-
-
-
-def personal_records(log: pd.DataFrame) -> pd.DataFrame:
-    if log.empty:
-        return pd.DataFrame(columns=["exercise", "best_weight", "best_reps", "best_volume"])
-    x = log.copy()
-    x["weight_lbs"] = pd.to_numeric(x["weight_lbs"], errors="coerce").fillna(0)
-    x["reps"] = pd.to_numeric(x["reps"], errors="coerce").fillna(0)
-    x["volume"] = pd.to_numeric(x["volume"], errors="coerce").fillna(0)
-    best = x.sort_values(["weight_lbs", "reps"], ascending=False).groupby("exercise", as_index=False).first()
-    out = best[["exercise", "weight_lbs", "reps", "volume"]].rename(columns={"weight_lbs":"best_weight", "reps":"best_reps", "volume":"best_volume"})
-    return out.sort_values("best_weight", ascending=False)
-
-
-def alpha_score(log: pd.DataFrame) -> int:
-    if log.empty:
-        return 0
-    sessions = log["date"].nunique()
-    total_sets = len(log)
-    avg_pain = pd.to_numeric(log["pain"], errors="coerce").fillna(0).mean()
-    score = min(100, int(sessions * 8 + min(total_sets, 120) * .35 - avg_pain * 3))
-    return max(0, score)
-
-
-def rest_timer_box(seconds: int):
-    st.markdown('<div class="card"><div class="card-title">Rest Timer</div>', unsafe_allow_html=True)
-    if "rest_end" not in st.session_state:
-        st.session_state.rest_end = None
-    c1, c2 = st.columns(2)
-    if c1.button(f"Start {seconds}s Rest", key="start_rest_timer"):
-        st.session_state.rest_end = datetime.now() + timedelta(seconds=int(seconds))
-    if c2.button("Reset Timer", key="reset_rest_timer"):
-        st.session_state.rest_end = None
-    if st.session_state.rest_end:
-        remaining = int((st.session_state.rest_end - datetime.now()).total_seconds())
-        if remaining > 0:
-            st.markdown(f'<div class="rest-number">{remaining}s</div><div class="muted">Refresh or interact to update.</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="safe-note">Rest complete — ready for next set.</div>', unsafe_allow_html=True)
-            st.session_state.rest_end = None
-    else:
-        st.markdown(f'<div class="rest-number">{seconds}s</div><div class="muted">Tap start after a hard set.</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def workout_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Today’s Workout</h1><p>Beta 1.1 fixes exercise image wiring: images load from assets/exercises and can be tested in Image Test.</p></div>', unsafe_allow_html=True)
-    cday, cdate, cweek, crest = st.columns([2,1,1,1])
-    today = date.today().strftime("%A")
-    day = cday.selectbox("Workout Day", DAY_ORDER, index=DAY_ORDER.index(today) if today in DAY_ORDER else 0)
-    wdate = cdate.date_input("Date", value=date.today())
-    week = int(cweek.number_input("Week", min_value=1, max_value=52, value=1, step=1))
-    rest_seconds = int(crest.selectbox("Rest Timer", [30, 45, 60, 75, 90, 120], index=2))
-    active = workouts[workouts["day"] == day].reset_index(drop=True)
-    if active.empty:
-        st.warning("No workout found for this day."); return
-    workout = str(active["workout"].iloc[0])
-    muscle = str(active["muscle_group"].iloc[0])
-    main, right = st.columns([3.4,1.15], gap="large")
-    rows=[]
-    completed_exercises = 0
-    with main:
-        st.markdown(f"### {day} — {workout}")
-        st.markdown('<div class="coach-strip">🏋️ Gym Mode Tip: complete your sets left to right, tap the checkboxes as you finish, then save the whole workout at the bottom.</div>', unsafe_allow_html=True)
-        for i, row in active.iterrows():
-            ex = str(row["exercise"])
-            sets = int(float(row.get("target_sets", 3) or 3))
-            target_reps = str(row.get("target_reps", "12"))
-            start_w = float(row.get("starting_weight_lbs", 0) or 0)
-            best = best_weight(log, ex)
-            st.markdown('<div class="exercise-card alpha2-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="exercise-head"><div><div class="exercise-name">{ex}</div><div class="muted">Previous best: {best:g} lbs • Target {sets} × {target_reps}</div></div><div class="target-badge">Beta 1.1 Card</div></div>', unsafe_allow_html=True)
-            imgcol, formcol, cuecol = st.columns([1.05,2.05,1.05], gap="medium")
-            with imgcol:
-                path = img_path(row)
-                if path:
-                    st.image(str(path), use_container_width=True)
-                else:
-                    st.markdown('<div class="image-fallback"><b>Image coming soon</b><br/><span>assets/exercises</span></div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="mini-stat"><span>PR</span><b>{best:g} lbs</b></div>', unsafe_allow_html=True)
-            entered_any = False
-            with formcol:
-                notes = st.text_input("Notes", key=f"note_{day}_{i}", placeholder="Form, difficulty, pain, etc.")
-                pain, rpe = st.columns(2)
-                pain_val = int(pain.number_input("Pain 0-10", min_value=0, max_value=10, value=0, key=f"pain_{day}_{i}"))
-                rpe_val = int(rpe.number_input("Effort RPE", min_value=0, max_value=10, value=7, key=f"rpe_{day}_{i}"))
-                st.markdown('<div class="set-table-head"><span>Set</span><span>Weight</span><span>Reps</span><span>Done</span><span>Volume</span></div>', unsafe_allow_html=True)
-                for s in range(1, sets+1):
-                    lw, lr = latest_set(log, ex, s, start_w)
-                    a,b,c,d,e = st.columns([.45,1,1,.65,1])
-                    a.markdown(f"**{s}**")
-                    weight = b.number_input("lbs", min_value=0.0, value=float(lw), step=2.5, key=f"w_{day}_{i}_{s}", label_visibility="collapsed")
-                    reps = c.number_input("reps", min_value=0, value=int(lr or 0), step=1, key=f"r_{day}_{i}_{s}", label_visibility="collapsed")
-                    done = d.checkbox("", value=bool(reps > 0), key=f"done_{day}_{i}_{s}")
-                    vol = weight * reps if done else 0
-                    e.markdown(f"<b>{vol:,.0f}</b><br/><span class='muted'>lbs</span>", unsafe_allow_html=True)
-                    if done and reps > 0:
-                        entered_any = True
-                        rows.append({"date":str(wdate),"saved_at":datetime.now().isoformat(timespec="seconds"),"week":week,"day":day,"workout":workout,"muscle_group":muscle,"exercise":ex,"set_number":s,"weight_lbs":weight,"reps":reps,"pain":pain_val,"rpe":rpe_val,"notes":notes,"volume":vol})
-            with cuecol:
-                st.markdown('<div class="cue-card"><div class="card-title">How To</div>', unsafe_allow_html=True)
-                for cue in exercise_cues(ex):
-                    st.markdown(f'<div class="cue">✓ {cue}</div>', unsafe_allow_html=True)
-                if pain_val >= 4:
-                    st.markdown('<div class="danger-note">Knee/pain warning: reduce load or stop.</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<div class="safe-note">Pain check OK.</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-            if entered_any:
-                completed_exercises += 1
-            st.markdown('</div>', unsafe_allow_html=True)
-        totals = workout_totals(rows)
-        st.markdown(f'<div class="finish-panel"><b>Workout Ready to Save</b><br/>{totals["sets"]} sets • {totals["volume"]:,.0f} lbs volume • Avg RPE {totals["avg_rpe"]}</div>', unsafe_allow_html=True)
-        if st.button("💾 Save Full Workout", type="primary"):
+elif page in ['Today’s Workout','Gym Mode']:
+    st.title('Today’s Workout')
+    top=st.columns([2,1,1,1])
+    today=date.today().strftime('%A'); idx=DAY_ORDER.index(today) if today in DAY_ORDER else 0
+    day=top[0].selectbox('Workout Day',DAY_ORDER,idx); workout_date=top[1].date_input('Date',date.today()); week=top[2].number_input('Week',min_value=1,value=1); rest=top[3].selectbox('Rest Timer',[45,60,75,90,120],index=1)
+    active=workouts[workouts.day.astype(str).str.lower()==day.lower()].reset_index(drop=True); workout_name=active.workout.iloc[0] if not active.empty else 'Recovery'
+    st.markdown(f'<div class="hero-card"><h2>{day} — {workout_name}</h2><span class="pill">{workout_name}</span><span class="pill green">{len(active)} exercises</span></div>',unsafe_allow_html=True)
+    left,right=st.columns([3.15,1]); rows=[]; total_volume=0; completed=0
+    with left:
+        for i,row in active.iterrows():
+            exercise=str(row.exercise); sets=int(row.target_sets); reps_target=str(row.target_reps); start_w=float(row.starting_weight_lbs) if pd.notna(row.starting_weight_lbs) else 0; best=last_best(log,exercise); img=find_img(exercise)
+            st.markdown('<div class="exercise-card"><div class="exercise-body">',unsafe_allow_html=True); st.markdown(image_html(img,exercise),unsafe_allow_html=True)
+            st.markdown(f'<div><div class="ex-top"><div><div class="ex-title">{i+1}. {exercise}</div><span class="pill">Target: {sets} x {reps_target}</span><span class="pill green">{workout_name}</span><p class="muted">Previous Best: {best:g} lbs</p></div><div class="how-btn">▷ HOW TO</div></div>',unsafe_allow_html=True)
+            st.markdown('<div class="set-head">SET · WEIGHT · REPS · RPE · NOTES · VOLUME</div>',unsafe_allow_html=True)
+            ex_started=False
+            for s in range(1,sets+1):
+                cols=st.columns([.45,1,.75,.75,1.1,.8])
+                cols[0].markdown(f'<span class="set-num">{s}</span>',unsafe_allow_html=True)
+                w=cols[1].number_input('weight',min_value=0.0,value=start_w if start_w>0 else best,step=5.0,key=f'w_{day}_{i}_{s}',label_visibility='collapsed')
+                try: default_reps=int(str(reps_target).split('-')[0])
+                except: default_reps=0
+                r=cols[2].number_input('reps',min_value=0,value=default_reps,step=1,key=f'r_{day}_{i}_{s}',label_visibility='collapsed')
+                rpe=cols[3].number_input('rpe',min_value=0.0,max_value=10.0,value=7.0,step=.5,key=f'rpe_{day}_{i}_{s}',label_visibility='collapsed')
+                note=cols[4].text_input('note',value='felt good' if s==1 else '',key=f'n_{day}_{i}_{s}',label_visibility='collapsed')
+                v=w*r; cols[5].markdown(f'<div class="vol">{v:,.0f} lbs</div>',unsafe_allow_html=True)
+                if r>0:
+                    ex_started=True; total_volume+=v; rows.append({'date':str(workout_date),'saved_at':datetime.now().isoformat(timespec='seconds'),'day':day,'workout':workout_name,'exercise':exercise,'set_number':s,'weight_lbs':w,'reps':r,'rpe':rpe,'pain':0,'notes':note,'volume':v})
+            if ex_started: completed+=1
+            st.markdown('</div></div></div>',unsafe_allow_html=True)
+        if st.button('✅ Finish & Save Workout', type='primary', use_container_width=True):
             if rows:
-                save_rows(rows)
-                st.session_state["last_saved_workout"] = {"sets": len(rows), "volume": totals["volume"], "day": day, "workout": workout, "date": str(wdate)}
-                st.success(f"Saved {len(rows)} sets to data/workout_log.csv")
-                st.balloons()
-                st.markdown(f'<div class="complete-panel"><h2>Workout Complete</h2><b>{day} — {workout}</b><br/>{len(rows)} sets saved • {totals["volume"]:,.0f} lbs volume<br/><span>Backup created before save.</span></div>', unsafe_allow_html=True)
-            else:
-                st.warning("Enter reps and mark at least one set complete before saving.")
+                save_log(pd.concat([load_log(),pd.DataFrame(rows)],ignore_index=True)); st.success(f'Saved {len(rows)} sets to data/workout_log.csv'); st.balloons()
+            else: st.warning('Enter reps before saving.')
     with right:
-        totals = workout_totals(rows)
-        st.markdown('<div class="summary-panel">', unsafe_allow_html=True)
-        st.markdown(f'<div class="card"><div class="card-title">Live Summary</div><div class="muted">{day}</div><hr/><b>{completed_exercises} / {len(active)}</b> exercises started<br/><b>{totals["sets"]}</b> sets complete<br/><b>{totals["volume"]:,.0f}</b> lbs volume<br/><b>{totals["avg_rpe"]}</b> avg RPE</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card"><div class="card-title">Muscle Focus</div><div class="pill">{muscle}</div><br/><br/><div class="muted">Protect the right knee. Leave every workout feeling like you could do more.</div></div>', unsafe_allow_html=True)
-        rest_timer_box(rest_seconds)
-        st.markdown('<div class="card"><div class="card-title">Quick Actions</div><a class="action-btn">Export Backup</a><a class="action-btn" style="background:#16a34a">Finish Workout</a><a class="action-btn" style="background:#f59e0b">Add Note</a></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="timer">⏱️ Rest Timer: {rest_seconds}s • Beta 1.1 Image Wiring Fixed</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="summary-card"><div class="summary-title">📋 Workout Summary</div><div class="summary-row"><span>Exercises</span><b>{len(active)}</b></div><div class="summary-row"><span>Total Volume</span><b class="green-text">{total_volume:,.0f} lbs</b></div><div class="summary-row"><span>Rest Timer</span><b>{rest}s</b></div></div>',unsafe_allow_html=True)
+        st.markdown(f'<div class="summary-card"><div class="summary-title">💪 Muscle Focus</div><h3>{workout_name}</h3><p class="muted">Protect the knee. Controlled form first.</p></div>',unsafe_allow_html=True)
+    pct=int((completed/max(len(active),1))*100)
+    st.markdown(f'<div class="bottom-bar"><b>⏱ Rest Timer {rest}s</b><span class="muted">Commercial Gym Mode</span><div class="progress-line"><div class="progress-fill" style="width:{pct}%"></div></div><b>{completed}/{len(active)} exercises</b></div>',unsafe_allow_html=True)
 
-
-def gym_mode_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Gym Mode</h1><p>Simple one-exercise focus screen for phone use during workouts.</p></div>', unsafe_allow_html=True)
-    today = date.today().strftime("%A")
-    day = st.selectbox("Day", DAY_ORDER, index=DAY_ORDER.index(today) if today in DAY_ORDER else 0, key="gym_day")
-    active = workouts[workouts["day"] == day].reset_index(drop=True)
-    if active.empty:
-        st.warning("No workout found."); return
-    idx = int(st.number_input("Exercise #", min_value=1, max_value=len(active), value=1, step=1)) - 1
-    row = active.iloc[idx]
-    ex = str(row["exercise"])
-    sets = int(float(row.get("target_sets", 3) or 3))
-    target_reps = str(row.get("target_reps", "12"))
-    st.markdown('<div class="gym-focus">', unsafe_allow_html=True)
-    path = img_path(row)
-    if path:
-        st.image(str(path), use_container_width=True)
-    st.markdown(f'<h1>{ex}</h1><div class="pill">Target {sets} × {target_reps}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gym-actions"><span>⬅ Previous</span><span>Start Set</span><span>Next ➡</span></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
-def history_page(log):
-    st.markdown('<div class="hero"><h1>History</h1><p>Your saved workouts from data/workout_log.csv.</p></div>', unsafe_allow_html=True)
-    if log.empty:
-        st.info("No workout history yet.")
+elif page=='Weekly Plan':
+    st.title('Weekly Plan')
+    for d in DAY_ORDER:
+        dd=workouts[workouts.day==d]; name=dd.workout.iloc[0] if not dd.empty else 'Recovery'; st.markdown(f'<div class="summary-card"><h3>{d} — {name}</h3><span class="pill green">{len(dd)} exercises</span></div>',unsafe_allow_html=True)
+elif page=='Exercise Library':
+    st.title('Exercise Library')
+    q=st.text_input('Search exercises')
+    ex=workouts[['exercise','workout','day','target_sets','target_reps']].drop_duplicates()
+    if q: ex=ex[ex.exercise.str.contains(q,case=False,na=False)]
+    cols=st.columns(3)
+    for i,(_,r) in enumerate(ex.iterrows()):
+        with cols[i%3]:
+            st.markdown('<div class="catalog-card">',unsafe_allow_html=True)
+            img=find_img(r.exercise)
+            if img: st.image(str(img),use_container_width=True)
+            else: st.markdown(image_html(None,r.exercise),unsafe_allow_html=True)
+            st.markdown(f'<b>{r.exercise}</b><br><span class="muted">{r.workout}</span><br><span class="pill">{r.day} · {r.target_sets} x {r.target_reps}</span>',unsafe_allow_html=True)
+            st.markdown('</div>',unsafe_allow_html=True)
+elif page=='Image Test':
+    st.title('Image Test')
+    rows=[]
+    for ex in workouts.exercise.drop_duplicates():
+        img=find_img(ex); rows.append({'exercise':ex,'status':'FOUND' if img else 'MISSING','file':img.name if img else ''})
+    st.dataframe(pd.DataFrame(rows),use_container_width=True)
+elif page=='History':
+    st.title('History'); hist=load_log(); st.dataframe(hist.tail(500),use_container_width=True)
+    if not hist.empty: st.download_button('Download workout_log.csv', hist.to_csv(index=False).encode(), 'workout_log.csv','text/csv')
+elif page=='Progress':
+    st.title('Progress'); hist=load_log()
+    if hist.empty: st.info('No saved workouts yet.')
     else:
-        st.dataframe(log.sort_values(["date","saved_at"], ascending=False), use_container_width=True)
-        st.download_button("Download workout_log.csv", log.to_csv(index=False).encode(), "workout_log.csv", "text/csv")
-
-
-
-def progress_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Progress Analytics</h1><p>Beta 1.1 keeps the Alpha analytics and adds a more stable daily-use workflow.</p></div>', unsafe_allow_html=True)
-    if log.empty:
-        st.info("No workout history yet. Save a workout first.")
-        return
-    x = log.copy()
-    x["volume"] = pd.to_numeric(x["volume"], errors="coerce").fillna(0)
-    x["weight_lbs"] = pd.to_numeric(x["weight_lbs"], errors="coerce").fillna(0)
-    x["reps"] = pd.to_numeric(x["reps"], errors="coerce").fillna(0)
-    x["pain"] = pd.to_numeric(x["pain"], errors="coerce").fillna(0)
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f'<div class="big-stat"><div class="label">Comeback Score</div><div class="value">{alpha_score(x)}</div></div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="big-stat"><div class="label">Total Volume</div><div class="value">{x["volume"].sum():,.0f}</div></div>', unsafe_allow_html=True)
-    c3.markdown(f'<div class="big-stat"><div class="label">Avg Pain</div><div class="value">{x["pain"].mean():.1f}</div></div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="big-stat"><div class="label">Exercises</div><div class="value">{x["exercise"].nunique()}</div></div>', unsafe_allow_html=True)
-    daily = x.groupby("date", as_index=False).agg(volume=("volume","sum"), sets=("exercise","count"), pain=("pain","mean"))
-    st.plotly_chart(px.line(daily, x="date", y="volume", markers=True, title="Daily Training Volume"), use_container_width=True)
-    muscle = x.groupby("muscle_group", as_index=False)["volume"].sum().sort_values("volume", ascending=False)
-    st.plotly_chart(px.bar(muscle, x="muscle_group", y="volume", title="Volume by Muscle Group"), use_container_width=True)
-    st.markdown("### Personal Records")
-    st.dataframe(personal_records(x).head(20), use_container_width=True)
-
-
-def coach_page(workouts, log):
-    st.markdown('<div class="hero"><h1>AI Coach Preview</h1><p>Beta 1.1 coach preview gives simple rule-based recommendations from your saved workouts.</p></div>', unsafe_allow_html=True)
-    if log.empty:
-        st.info("Save a workout first and the coach will start making recommendations.")
-        return
-    x = log.copy()
-    x["weight_lbs"] = pd.to_numeric(x["weight_lbs"], errors="coerce").fillna(0)
-    x["reps"] = pd.to_numeric(x["reps"], errors="coerce").fillna(0)
-    x["pain"] = pd.to_numeric(x["pain"], errors="coerce").fillna(0)
-    x["rpe"] = pd.to_numeric(x["rpe"], errors="coerce").fillna(0)
-    latest_date = x["date"].astype(str).max()
-    latest = x[x["date"].astype(str) == latest_date]
-    avg_pain = latest["pain"].mean() if not latest.empty else 0
-    avg_rpe = latest["rpe"].mean() if not latest.empty else 0
-    st.markdown(f'<div class="card"><div class="card-title">Latest Workout Review</div><b>Date:</b> {latest_date}<br/><b>Sets:</b> {len(latest)}<br/><b>Avg RPE:</b> {avg_rpe:.1f}<br/><b>Avg Pain:</b> {avg_pain:.1f}</div>', unsafe_allow_html=True)
-    if avg_pain >= 4:
-        st.markdown('<div class="danger-note">Recommendation: pain is elevated. Keep loads lighter and avoid lower-body stress until pain comes down.</div>', unsafe_allow_html=True)
-    elif avg_rpe <= 7 and len(latest) > 0:
-        st.markdown('<div class="safe-note">Recommendation: if all reps were completed comfortably, increase selected upper-body machine weights by 2.5–5 lb next time.</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="coach-strip">Recommendation: hold the same weights next session and focus on clean reps.</div>', unsafe_allow_html=True)
-    st.markdown("### Suggested Next Improvements")
-    prs = personal_records(x).head(8)
-    for _, r in prs.iterrows():
-        ex = r["exercise"]
-        bw = float(r["best_weight"] or 0)
-        st.markdown(f'<div class="card"><div class="card-title">{ex}</div><div class="muted">Current best: {bw:g} lbs</div><b>Next target:</b> {bw + 2.5:g} lbs if pain-free and reps were completed.</div>', unsafe_allow_html=True)
-
-def library_page(workouts):
-    st.markdown('<div class="hero"><h1>Exercise Library</h1><p>Images are loaded from assets/exercises and mapped from workouts.csv.</p></div>', unsafe_allow_html=True)
-    q = st.text_input("Search exercises", "")
-    df = workouts.drop_duplicates("exercise")
-    if q:
-        df = df[df["exercise"].str.contains(q, case=False, na=False)]
-    cols = st.columns(3)
-    for idx, (_, row) in enumerate(df.iterrows()):
-        with cols[idx % 3]:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            path = img_path(row)
-            if path: st.image(str(path), use_container_width=True)
-            st.markdown(f'<div class="card-title">{row["exercise"]}</div><div class="muted">{row["muscle_group"]}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-
-
-def weekly_plan_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Weekly Plan</h1><p>Beta 1.1 gives you a clear muscle-group schedule before you start training.</p></div>', unsafe_allow_html=True)
-    for day in DAY_ORDER:
-        d = workouts[workouts["day"] == day].copy()
-        if d.empty:
-            continue
-        workout = d["workout"].iloc[0]
-        muscle = d["muscle_group"].iloc[0]
-        recent = log[log["day"].astype(str) == day] if not log.empty else pd.DataFrame()
-        sessions = recent["date"].nunique() if not recent.empty else 0
-        st.markdown(f'<div class="weekly-card"><div><span class="day-badge">{day}</span><h3>{workout}</h3><p>{muscle}</p></div><div class="weekly-meta"><b>{len(d)}</b><span>exercises</span><br/><b>{sessions}</b><span> saved sessions</span></div></div>', unsafe_allow_html=True)
-        with st.expander(f"View {day} exercises"):
-            st.dataframe(d[["exercise","target_sets","target_reps","muscle_group"]], use_container_width=True, hide_index=True)
-
-
-def completion_page(log):
-    st.markdown('<div class="hero"><h1>Workout Complete</h1><p>Review your latest saved session and export your log.</p></div>', unsafe_allow_html=True)
-    if log.empty:
-        st.info("No saved workouts yet.")
-        return
-    latest_date = log["date"].astype(str).max()
-    latest = log[log["date"].astype(str) == latest_date].copy()
-    latest["volume"] = pd.to_numeric(latest["volume"], errors="coerce").fillna(0)
-    c1,c2,c3 = st.columns(3)
-    c1.metric("Date", latest_date)
-    c2.metric("Sets", len(latest))
-    c3.metric("Volume", f"{latest['volume'].sum():,.0f} lbs")
-    st.dataframe(latest.sort_values(["exercise","set_number"]), use_container_width=True)
-    st.download_button("Export latest workout", latest.to_csv(index=False).encode(), f"latest_workout_{latest_date}.csv", "text/csv")
-
-
-def image_test_page(workouts):
-    st.markdown('<div class="hero"><h1>Image Test</h1><p>This page verifies every workout exercise is connected to a real file inside assets/exercises.</p></div>', unsafe_allow_html=True)
-    rows = []
-    for _, row in workouts.drop_duplicates("exercise").iterrows():
-        p = img_path(row)
-        rows.append({
-            "exercise": row.get("exercise", ""),
-            "image_file": p.name if p else "MISSING",
-            "status": "✅ Found" if p else "❌ Missing"
-        })
-    result = pd.DataFrame(rows)
-    found = int((result["status"] == "✅ Found").sum()) if not result.empty else 0
-    total = len(result)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Images Found", found)
-    c2.metric("Exercises", total)
-    c3.metric("Missing", total - found)
-    st.dataframe(result, use_container_width=True, hide_index=True)
-    st.markdown("### Preview")
-    cols = st.columns(4)
-    for idx, (_, row) in enumerate(workouts.drop_duplicates("exercise").iterrows()):
-        with cols[idx % 4]:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            p = img_path(row)
-            if p:
-                st.image(str(p), use_container_width=True)
-            else:
-                st.markdown('<div class="image-fallback"><b>No image yet</b><br/><span>Missing file</span></div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="card-title">{row["exercise"]}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-def data_safety(log):
-    st.markdown('<div class="hero"><h1>Data Safety</h1><p>Keep workout_log.csv safe. Do not overwrite it during updates.</p></div>', unsafe_allow_html=True)
-    st.success(f"Workout log location: {LOG_FILE}")
-    st.metric("Rows saved", len(log))
-    st.download_button("Export workout_log.csv", log.to_csv(index=False).encode(), "workout_log.csv", "text/csv")
-    uploaded = st.file_uploader("Import workout_log.csv backup", type=["csv"])
-    if uploaded and st.button("Replace workout log with uploaded backup"):
-        df = pd.read_csv(uploaded)
-        df.to_csv(LOG_FILE, index=False)
-        st.success("Workout log restored.")
-
-
-def main():
-    ensure_files(); load_css()
-    workouts = load_workouts()
-    log = load_log()
-    page = sidebar(["Dashboard","Today’s Workout","Gym Mode","Weekly Plan","Workout Complete","Progress","Coach","Exercise Library","Image Test","History","Data Safety"])
-    if page == "Dashboard": dashboard(workouts, log)
-    elif page == "Today’s Workout": workout_page(workouts, log)
-    elif page == "Gym Mode": gym_mode_page(workouts, log)
-    elif page == "Weekly Plan": weekly_plan_page(workouts, log)
-    elif page == "Workout Complete": completion_page(log)
-    elif page == "Progress": progress_page(workouts, log)
-    elif page == "Coach": coach_page(workouts, log)
-    elif page == "Exercise Library": library_page(workouts)
-    elif page == "Image Test": image_test_page(workouts)
-    elif page == "History": history_page(log)
-    elif page == "Data Safety": data_safety(log)
-
-if __name__ == "__main__":
-    main()
+        hist['volume']=pd.to_numeric(hist['volume'],errors='coerce').fillna(0); st.bar_chart(hist.groupby('exercise')['volume'].sum().sort_values(ascending=False).head(15))
+elif page=='Data & Export':
+    st.title('Data & Export'); st.write('Workout history saves to data/workout_log.csv')
+    if LOG_FILE.exists(): st.download_button('Export workout history', LOG_FILE.read_bytes(),'workout_log.csv','text/csv')
