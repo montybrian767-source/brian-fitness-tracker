@@ -20,7 +20,7 @@ PROFILE_FILE = DATA_DIR / "profile.csv"
 LOG_COLUMNS = ["date","saved_at","week","day","workout","muscle_group","exercise","set_number","weight_lbs","reps","pain","rpe","notes","volume"]
 DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
 
-st.set_page_config(page_title="Brian Fitness Tracker 2.0 Alpha", page_icon="🏋️", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Brian Fitness Tracker 2.0 Alpha 2", page_icon="🏋️", layout="wide", initial_sidebar_state="expanded")
 
 
 def load_css():
@@ -117,6 +117,32 @@ def img_path(row) -> Path | None:
     return p if p.exists() else None
 
 
+def exercise_cues(exercise: str) -> list[str]:
+    e = exercise.lower()
+    if "pulldown" in e:
+        return ["Keep chest tall and shoulders down.", "Pull elbows toward your ribs.", "Control the weight on the way up."]
+    if "row" in e:
+        return ["Sit tall and brace your core.", "Pull with elbows, not hands.", "Squeeze shoulder blades together."]
+    if "chest" in e or "press" in e:
+        return ["Set shoulders back before pressing.", "Keep wrists stacked over elbows.", "Stop 1–2 reps before failure."]
+    if "curl" in e:
+        return ["Keep elbows still.", "Use full control, no swinging.", "Squeeze at the top."]
+    if "tricep" in e or "pushdown" in e or "extension" in e:
+        return ["Lock elbows near your sides.", "Move only at the elbow.", "Pause at the bottom."]
+    if "leg" in e or "hip" in e or "hamstring" in e or "calf" in e:
+        return ["Protect the right knee.", "Use pain-free range only.", "Slow and controlled reps."]
+    return ["Use controlled form.", "Breathe through each rep.", "Stop if pain appears."]
+
+
+def workout_totals(rows: list[dict]) -> dict:
+    return {
+        "sets": len(rows),
+        "volume": sum(float(r.get("volume", 0) or 0) for r in rows),
+        "exercises": len(set(r.get("exercise", "") for r in rows)),
+        "avg_rpe": round(sum(float(r.get("rpe", 0) or 0) for r in rows) / len(rows), 1) if rows else 0,
+    }
+
+
 def phone_ip() -> str:
     try:
         s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(("8.8.8.8",80)); ip=s.getsockname()[0]; s.close(); return ip
@@ -124,7 +150,7 @@ def phone_ip() -> str:
 
 
 def sidebar(page_options):
-    st.sidebar.markdown('<div class="brand"><div class="brand-title">BRIAN FITNESS<br/>TRACKER 2.0</div><div class="brand-sub">Commercial Alpha 1</div></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="brand"><div class="brand-title">BRIAN FITNESS<br/>TRACKER 2.0</div><div class="brand-sub">Commercial Alpha 2</div></div>', unsafe_allow_html=True)
     page = st.sidebar.radio("Navigation", page_options, label_visibility="collapsed")
     st.sidebar.markdown('<div class="sidebar-card"><b>Data Status</b><br/><span style="color:#a8c7ff!important">Workout history saves to</span><br/><code>data/workout_log.csv</code></div>', unsafe_allow_html=True)
     with st.sidebar.expander("📱 Phone Link"):
@@ -169,12 +195,13 @@ def dashboard(workouts, log):
 
 
 def workout_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Today\'s Workout</h1><p>Premium workout cards, live volume, image system, and safe workout logging.</p></div>', unsafe_allow_html=True)
-    cday, cdate, cweek = st.columns([2,1,1])
+    st.markdown('<div class="hero"><h1>Today’s Workout</h1><p>Alpha 2 adds premium exercise cards, form cues, set complete tracking, live workout totals, and rest timer controls.</p></div>', unsafe_allow_html=True)
+    cday, cdate, cweek, crest = st.columns([2,1,1,1])
     today = date.today().strftime("%A")
     day = cday.selectbox("Workout Day", DAY_ORDER, index=DAY_ORDER.index(today) if today in DAY_ORDER else 0)
     wdate = cdate.date_input("Date", value=date.today())
     week = int(cweek.number_input("Week", min_value=1, max_value=52, value=1, step=1))
+    rest_seconds = int(crest.selectbox("Rest Timer", [30, 45, 60, 75, 90, 120], index=2))
     active = workouts[workouts["day"] == day].reset_index(drop=True)
     if active.empty:
         st.warning("No workout found for this day."); return
@@ -182,52 +209,96 @@ def workout_page(workouts, log):
     muscle = str(active["muscle_group"].iloc[0])
     main, right = st.columns([3.4,1.15], gap="large")
     rows=[]
+    completed_exercises = 0
     with main:
         st.markdown(f"### {day} — {workout}")
+        st.markdown('<div class="coach-strip">🏋️ Gym Mode Tip: complete your sets left to right, tap the checkboxes as you finish, then save the whole workout at the bottom.</div>', unsafe_allow_html=True)
         for i, row in active.iterrows():
             ex = str(row["exercise"])
             sets = int(float(row.get("target_sets", 3) or 3))
             target_reps = str(row.get("target_reps", "12"))
             start_w = float(row.get("starting_weight_lbs", 0) or 0)
             best = best_weight(log, ex)
-            st.markdown('<div class="exercise-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="exercise-head"><div><div class="exercise-name">{ex}</div><div class="muted">Previous best: {best:g} lbs</div></div><div class="target-badge">{sets} × {target_reps}</div></div>', unsafe_allow_html=True)
-            imgcol, formcol = st.columns([1.1,2.15], gap="medium")
+            st.markdown('<div class="exercise-card alpha2-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="exercise-head"><div><div class="exercise-name">{ex}</div><div class="muted">Previous best: {best:g} lbs • Target {sets} × {target_reps}</div></div><div class="target-badge">Alpha 2 Card</div></div>', unsafe_allow_html=True)
+            imgcol, formcol, cuecol = st.columns([1.05,2.05,1.05], gap="medium")
             with imgcol:
                 path = img_path(row)
                 if path:
                     st.image(str(path), use_container_width=True)
                 else:
-                    st.markdown('<div class="card" style="height:230px;display:flex;align-items:center;justify-content:center;text-align:center"><b>Image coming soon</b></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="image-fallback"><b>Image coming soon</b><br/><span>assets/exercises</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="mini-stat"><span>PR</span><b>{best:g} lbs</b></div>', unsafe_allow_html=True)
+            entered_any = False
             with formcol:
                 notes = st.text_input("Notes", key=f"note_{day}_{i}", placeholder="Form, difficulty, pain, etc.")
-                pain = int(st.number_input("Pain", min_value=0, max_value=10, value=0, key=f"pain_{day}_{i}"))
-                rpe = int(st.number_input("RPE", min_value=0, max_value=10, value=7, key=f"rpe_{day}_{i}"))
+                pain, rpe = st.columns(2)
+                pain_val = int(pain.number_input("Pain 0-10", min_value=0, max_value=10, value=0, key=f"pain_{day}_{i}"))
+                rpe_val = int(rpe.number_input("Effort RPE", min_value=0, max_value=10, value=7, key=f"rpe_{day}_{i}"))
+                st.markdown('<div class="set-table-head"><span>Set</span><span>Weight</span><span>Reps</span><span>Done</span><span>Volume</span></div>', unsafe_allow_html=True)
                 for s in range(1, sets+1):
                     lw, lr = latest_set(log, ex, s, start_w)
-                    a,b,c,d = st.columns([.75,1,1,1])
-                    a.markdown(f"**Set {s}**  ")
+                    a,b,c,d,e = st.columns([.45,1,1,.65,1])
+                    a.markdown(f"**{s}**")
                     weight = b.number_input("lbs", min_value=0.0, value=float(lw), step=2.5, key=f"w_{day}_{i}_{s}", label_visibility="collapsed")
                     reps = c.number_input("reps", min_value=0, value=int(lr or 0), step=1, key=f"r_{day}_{i}_{s}", label_visibility="collapsed")
-                    vol = weight * reps
-                    d.markdown(f"<b>{vol:,.0f} lbs</b><br/><span class='muted'>volume</span>", unsafe_allow_html=True)
-                    if reps > 0:
-                        rows.append({"date":str(wdate),"saved_at":datetime.now().isoformat(timespec="seconds"),"week":week,"day":day,"workout":workout,"muscle_group":muscle,"exercise":ex,"set_number":s,"weight_lbs":weight,"reps":reps,"pain":pain,"rpe":rpe,"notes":notes,"volume":vol})
+                    done = d.checkbox("", value=bool(reps > 0), key=f"done_{day}_{i}_{s}")
+                    vol = weight * reps if done else 0
+                    e.markdown(f"<b>{vol:,.0f}</b><br/><span class='muted'>lbs</span>", unsafe_allow_html=True)
+                    if done and reps > 0:
+                        entered_any = True
+                        rows.append({"date":str(wdate),"saved_at":datetime.now().isoformat(timespec="seconds"),"week":week,"day":day,"workout":workout,"muscle_group":muscle,"exercise":ex,"set_number":s,"weight_lbs":weight,"reps":reps,"pain":pain_val,"rpe":rpe_val,"notes":notes,"volume":vol})
+            with cuecol:
+                st.markdown('<div class="cue-card"><div class="card-title">How To</div>', unsafe_allow_html=True)
+                for cue in exercise_cues(ex):
+                    st.markdown(f'<div class="cue">✓ {cue}</div>', unsafe_allow_html=True)
+                if pain_val >= 4:
+                    st.markdown('<div class="danger-note">Knee/pain warning: reduce load or stop.</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="safe-note">Pain check OK.</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            if entered_any:
+                completed_exercises += 1
             st.markdown('</div>', unsafe_allow_html=True)
-        if st.button("💾 Save Workout", type="primary"):
+        totals = workout_totals(rows)
+        st.markdown(f'<div class="finish-panel"><b>Workout Ready to Save</b><br/>{totals["sets"]} sets • {totals["volume"]:,.0f} lbs volume • Avg RPE {totals["avg_rpe"]}</div>', unsafe_allow_html=True)
+        if st.button("💾 Save Full Workout", type="primary"):
             if rows:
                 save_rows(rows)
                 st.success(f"Saved {len(rows)} sets to data/workout_log.csv")
                 st.balloons()
             else:
-                st.warning("Enter reps before saving.")
+                st.warning("Enter reps and mark at least one set complete before saving.")
     with right:
+        totals = workout_totals(rows)
         st.markdown('<div class="summary-panel">', unsafe_allow_html=True)
-        st.markdown(f'<div class="card"><div class="card-title">Workout Summary</div><div class="muted">{day}</div><hr/><b>{len(active)}</b> exercises<br/><b>{sum(int(float(x or 0)) for x in active["target_sets"]):}</b> target sets<br/><b>{sum(r.get("volume",0) for r in rows):,.0f}</b> planned volume</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card"><div class="card-title">Muscle Focus</div><div class="pill">{muscle}</div><br/><br/><div class="muted">Stay controlled. Protect the knee. Progress slowly.</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="card"><div class="card-title">Quick Actions</div><a class="action-btn">Export Backup</a><a class="action-btn" style="background:#16a34a">Finish Workout</a><a class="action-btn" style="background:#f59e0b">Rest Timer</a></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card"><div class="card-title">Live Summary</div><div class="muted">{day}</div><hr/><b>{completed_exercises} / {len(active)}</b> exercises started<br/><b>{totals["sets"]}</b> sets complete<br/><b>{totals["volume"]:,.0f}</b> lbs volume<br/><b>{totals["avg_rpe"]}</b> avg RPE</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card"><div class="card-title">Muscle Focus</div><div class="pill">{muscle}</div><br/><br/><div class="muted">Protect the right knee. Leave every workout feeling like you could do more.</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card"><div class="card-title">Rest Timer</div><div class="rest-number">{rest_seconds}s</div><div class="muted">Use your phone timer for now. Built-in countdown comes in Alpha 3.</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="card"><div class="card-title">Quick Actions</div><a class="action-btn">Export Backup</a><a class="action-btn" style="background:#16a34a">Finish Workout</a><a class="action-btn" style="background:#f59e0b">Add Note</a></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="timer">⏱️ Rest Timer Ready • Alpha 1 Framework</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="timer">⏱️ Rest Timer: {rest_seconds}s • Alpha 2 Workout Experience</div>', unsafe_allow_html=True)
+
+
+def gym_mode_page(workouts, log):
+    st.markdown('<div class="hero"><h1>Gym Mode</h1><p>Simple one-exercise focus screen for phone use during workouts.</p></div>', unsafe_allow_html=True)
+    today = date.today().strftime("%A")
+    day = st.selectbox("Day", DAY_ORDER, index=DAY_ORDER.index(today) if today in DAY_ORDER else 0, key="gym_day")
+    active = workouts[workouts["day"] == day].reset_index(drop=True)
+    if active.empty:
+        st.warning("No workout found."); return
+    idx = int(st.number_input("Exercise #", min_value=1, max_value=len(active), value=1, step=1)) - 1
+    row = active.iloc[idx]
+    ex = str(row["exercise"])
+    sets = int(float(row.get("target_sets", 3) or 3))
+    target_reps = str(row.get("target_reps", "12"))
+    st.markdown('<div class="gym-focus">', unsafe_allow_html=True)
+    path = img_path(row)
+    if path:
+        st.image(str(path), use_container_width=True)
+    st.markdown(f'<h1>{ex}</h1><div class="pill">Target {sets} × {target_reps}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gym-actions"><span>⬅ Previous</span><span>Start Set</span><span>Next ➡</span></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def history_page(log):
@@ -271,9 +342,10 @@ def main():
     ensure_files(); load_css()
     workouts = load_workouts()
     log = load_log()
-    page = sidebar(["Dashboard","Today’s Workout","Exercise Library","History","Data Safety"])
+    page = sidebar(["Dashboard","Today’s Workout","Gym Mode","Exercise Library","History","Data Safety"])
     if page == "Dashboard": dashboard(workouts, log)
     elif page == "Today’s Workout": workout_page(workouts, log)
+    elif page == "Gym Mode": gym_mode_page(workouts, log)
     elif page == "Exercise Library": library_page(workouts)
     elif page == "History": history_page(log)
     elif page == "Data Safety": data_safety(log)

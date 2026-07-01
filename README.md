@@ -1,23 +1,20 @@
-# Brian Fitness Tracker 2.0 Alpha 1
+# Brian Fitness Tracker 2.0 Alpha 2
 
-Commercial UI foundation built from your working project.
+Alpha 2 focuses on the workout experience.
 
-## What changed
-- Professional navy sidebar
-- New dashboard framework
-- Premium workout card layout
-- Exercise image system in `assets/exercises/`
-- Data remains in `data/workout_log.csv`
-- History and Data Safety pages included
-
-## Install to GitHub
-Upload everything inside this folder to your repository. Do not upload the ZIP itself.
+## Added
+- Premium exercise card layout
+- Form cue panel for each exercise
+- Set complete checkboxes
+- Live workout summary
+- Rest timer setting panel
+- Gym Mode one-exercise focus screen
+- Keeps saving completed workouts to `data/workout_log.csv`
 
 ## Run locally
 ```bash
-python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-## Data safety
-Do not delete `data/workout_log.csv`. That is your saved workout history.
+## GitHub / Streamlit
+Upload everything inside this folder to your existing repository, but preserve your existing `data/workout_log.csv` if it contains real workout history.
