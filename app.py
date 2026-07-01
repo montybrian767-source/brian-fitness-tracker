@@ -19,9 +19,10 @@ BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 LOG_COLS = ['date','saved_at','week','day','workout','muscle_group','exercise','set_number','weight_lbs','reps','rpe','pain','notes','volume']
 
-st.set_page_config(page_title='Brian Fitness Tracker v16', page_icon='🏋️', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Brian Fitness Tracker v16.1', page_icon='🏋️', layout='wide', initial_sidebar_state='expanded')
 
-def slug(s): return re.sub(r'[^a-z0-9]+','_',str(s).lower()).strip('_') + '.png'
+def slug_base(s): return re.sub(r'[^a-z0-9]+','_',str(s).lower()).strip('_')
+def slug(s): return slug_base(s) + '.png'
 
 def read_csv_safe(path, cols=None):
     if path.exists():
@@ -38,25 +39,28 @@ ensure_data()
 def img_src(path_str):
     p = Path(path_str)
     if p.exists():
-        return 'data:image/png;base64,' + base64.b64encode(p.read_bytes()).decode()
+        ext = p.suffix.lower()
+        mime = 'image/svg+xml' if ext == '.svg' else 'image/png'
+        return f'data:{mime};base64,' + base64.b64encode(p.read_bytes()).decode()
     return ''
 
 def ex_img(exercise):
-    p = EX_DIR / slug(exercise)
-    src = img_src(str(p)) if p.exists() else ''
-    if src:
-        return src
-    # SVG fallback, professional and safe
+    """Return a real exercise visual when available. Never crashes if missing."""
+    base = slug_base(exercise)
+    candidates = [EX_DIR / f'{base}.png', EX_DIR / f'{base}.jpg', EX_DIR / f'{base}.jpeg', EX_DIR / f'{base}.svg']
+    for p in candidates:
+        if p.exists():
+            return img_src(str(p))
+    safe_name = str(exercise).replace('&','and')[:32]
     svg = f"""
     <svg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'>
-      <rect width='360' height='240' rx='26' fill='#f4f8ff' stroke='#dce8fb'/>
-      <rect x='36' y='52' width='12' height='150' rx='6' fill='#0b1f3a'/>
-      <rect x='312' y='52' width='12' height='150' rx='6' fill='#0b1f3a'/>
-      <rect x='82' y='75' width='196' height='14' rx='7' fill='#0b1f3a'/>
-      <circle cx='180' cy='58' r='20' fill='#bad2ff'/>
-      <path d='M115 96 C145 140, 215 140, 245 96' stroke='#0b5cff' stroke-width='13' fill='none' stroke-linecap='round'/>
-      <text x='180' y='205' text-anchor='middle' font-size='22' font-family='Arial' font-weight='800' fill='#0b1b34'>Exercise Visual</text>
-      <text x='180' y='226' text-anchor='middle' font-size='12' font-family='Arial' fill='#64748b'>{exercise[:30]}</text>
+      <rect width='360' height='240' rx='24' fill='#f8fafc' stroke='#dbe7f5'/>
+      <rect x='24' y='24' width='312' height='136' rx='18' fill='#eef6ff' stroke='#dbeafe'/>
+      <circle cx='180' cy='84' r='34' fill='#dbeafe'/>
+      <path d='M112 132 H248' stroke='#0b1f3a' stroke-width='12' stroke-linecap='round'/>
+      <path d='M130 120 C150 150, 210 150, 230 120' stroke='#0b5cff' stroke-width='10' fill='none' stroke-linecap='round'/>
+      <text x='180' y='195' text-anchor='middle' font-size='19' font-family='Arial' font-weight='900' fill='#0b1b34'>Image Coming Soon</text>
+      <text x='180' y='219' text-anchor='middle' font-size='12' font-family='Arial' fill='#64748b'>{safe_name}</text>
     </svg>"""
     return 'data:image/svg+xml;base64,' + base64.b64encode(svg.encode()).decode()
 
@@ -103,14 +107,14 @@ html,body,[data-testid="stAppViewContainer"]{background:var(--bg);color:var(--te
 .side-card{border:1px solid rgba(148,163,184,.24);background:rgba(255,255,255,.04);border-radius:18px;padding:18px;margin-top:18px}.safe-dot{width:34px;height:34px;border-radius:50%;background:#16a34a;display:inline-flex;align-items:center;justify-content:center;font-weight:900;margin-right:12px}.backup{border:1px solid rgba(148,163,184,.28);border-radius:14px;padding:14px;margin-top:15px}
 h1{font-size:36px!important;line-height:1.1;color:#071a35!important;margin:0 0 4px}.subtle{color:#64748b;font-weight:700}.badge{display:inline-block;background:#eaf2ff;border:1px solid #cfe0ff;color:#0757d6;border-radius:999px;padding:6px 12px;font-weight:900;font-size:13px;margin-right:8px}.badge-green{background:#eafaf0;border-color:#bfeecf;color:#04752d}.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.finish{background:#0b5cff;color:white;border-radius:10px;padding:13px 22px;font-weight:950;box-shadow:0 8px 18px rgba(11,92,255,.22)}
 .input-card{background:white;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 3px 14px rgba(15,23,42,.04)}.metric-card{background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 4px 16px rgba(15,23,42,.05);height:92px}.metric-label{font-weight:800;color:#64748b;font-size:13px}.metric-value{font-weight:950;color:#078a35;font-size:22px;margin-top:4px}
-.exercise-card{background:white;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:18px;box-shadow:0 8px 28px rgba(15,23,42,.06)}.exercise-grid{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:start}.ex-img{width:230px;height:155px;border-radius:12px;object-fit:cover;border:1px solid #dce5f0;box-shadow:0 2px 9px rgba(2,8,23,.08)}.ex-title{font-size:23px;font-weight:950;color:#071a35;margin:0 0 8px}.how-btn{float:right;border:1px solid #cad8ed;color:#0757d6;padding:10px 15px;border-radius:10px;font-weight:950;background:#fff}.kebab{float:right;font-size:26px;margin:4px 0 0 14px;color:#0b1b34}.prev{font-weight:800;color:#475569;margin:10px 0 12px}.set-table{width:100%;border-collapse:collapse;font-size:14px}.set-table th{color:#64748b;font-size:12px;text-align:left;border-bottom:1px solid #e5ebf3;padding:8px;font-weight:950}.set-table td{border-bottom:1px solid #eef2f7;padding:8px;font-weight:800}.set-dot{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;background:#dbeafe;color:#0b5cff;font-weight:950}.vol{color:#078a35;font-weight:950}.ex-total{float:right;background:#eafaf0;border:1px solid #bfeecf;border-radius:9px;padding:8px 20px;color:#078a35;font-weight:950;font-size:18px}.save-row{margin-top:12px}.stButton>button{border-radius:10px;font-weight:900;border:1px solid #cbd8e7;background:white}.stNumberInput input{text-align:center;font-weight:900}.stTextInput input{font-weight:700}.right-card{background:white;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 6px 20px rgba(15,23,42,.06)}.right-title{font-weight:950;color:#0b5cff;margin-bottom:12px}.summary-row{display:flex;justify-content:space-between;padding:8px 0;font-weight:800}.summary-row span:last-child{font-weight:950}.muscle-img{width:100%;border-radius:12px;border:1px solid #e5eaf2}.quick{border:1px solid #dce5f0;border-radius:10px;padding:12px;margin:8px 0;font-weight:950;color:#0757d6}.danger{color:#dc2626!important}.small-note{color:#64748b;font-weight:700;line-height:1.45}.stTabs [data-baseweb="tab-list"]{display:none!important} footer{visibility:hidden}.viewerBadge_container__1QSob{display:none!important}
+.exercise-card{background:white;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:18px;box-shadow:0 8px 28px rgba(15,23,42,.06)}.exercise-grid{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:start}.ex-img{width:230px;height:155px;border-radius:12px;object-fit:contain;background:#f8fbff;border:1px solid #dce5f0;box-shadow:0 2px 9px rgba(2,8,23,.08)}.ex-title{font-size:23px;font-weight:950;color:#071a35;margin:0 0 8px}.how-btn{float:right;border:1px solid #cad8ed;color:#0757d6;padding:10px 15px;border-radius:10px;font-weight:950;background:#fff}.kebab{float:right;font-size:26px;margin:4px 0 0 14px;color:#0b1b34}.prev{font-weight:800;color:#475569;margin:10px 0 12px}.set-table{width:100%;border-collapse:collapse;font-size:14px}.set-table th{color:#64748b;font-size:12px;text-align:left;border-bottom:1px solid #e5ebf3;padding:8px;font-weight:950}.set-table td{border-bottom:1px solid #eef2f7;padding:8px;font-weight:800}.set-dot{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;background:#dbeafe;color:#0b5cff;font-weight:950}.vol{color:#078a35;font-weight:950}.ex-total{float:right;background:#eafaf0;border:1px solid #bfeecf;border-radius:9px;padding:8px 20px;color:#078a35;font-weight:950;font-size:18px}.save-row{margin-top:12px}.stButton>button{border-radius:10px;font-weight:900;border:1px solid #cbd8e7;background:white}.stNumberInput input{text-align:center;font-weight:900}.stTextInput input{font-weight:700}.right-card{background:white;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 6px 20px rgba(15,23,42,.06)}.right-title{font-weight:950;color:#0b5cff;margin-bottom:12px}.summary-row{display:flex;justify-content:space-between;padding:8px 0;font-weight:800}.summary-row span:last-child{font-weight:950}.muscle-img{width:100%;border-radius:12px;border:1px solid #e5eaf2}.quick{border:1px solid #dce5f0;border-radius:10px;padding:12px;margin:8px 0;font-weight:950;color:#0757d6}.danger{color:#dc2626!important}.small-note{color:#64748b;font-weight:700;line-height:1.45}.stTabs [data-baseweb="tab-list"]{display:none!important} footer{visibility:hidden}.viewerBadge_container__1QSob{display:none!important}
 @media(max-width:900px){.exercise-grid{grid-template-columns:1fr}.ex-img{width:100%;height:210px}.topbar{display:block}.finish{display:inline-block;margin-top:12px}.block-container{padding-left:.75rem;padding-right:.75rem}.right-col{display:none}}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
 # Sidebar
-st.sidebar.markdown("<div class='sidebar-title'>🏋️ BRIAN</div><div class='sidebar-sub'>FITNESS TRACKER</div><div class='version-pill'>v16 Commercial UI</div>", unsafe_allow_html=True)
+st.sidebar.markdown("<div class='sidebar-title'>🏋️ BRIAN</div><div class='sidebar-sub'>FITNESS TRACKER</div><div class='version-pill'>v16.1 Exercise Image Library</div>", unsafe_allow_html=True)
 st.sidebar.markdown("<b>NAVIGATION</b>", unsafe_allow_html=True)
 page = st.sidebar.radio('', ['Dashboard','Today\'s Workout','Weekly Plan','Exercise Library','Progress','History','Data Safety','Profile','Phone Setup'], index=1)
 st.sidebar.markdown("<div class='side-card'><b>DATA STATUS</b><br><br><span class='safe-dot'>✓</span><b>All data is safe</b><br><span style='margin-left:47px;color:#cbd5e1!important'>workout_log.csv</span><div class='backup'>☁️ <b>EXPORT BACKUP</b><br><span style='color:#cbd5e1!important'>Download your data</span></div></div>", unsafe_allow_html=True)

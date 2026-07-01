@@ -1,25 +1,20 @@
-# Brian Fitness Tracker v16 — Commercial Edition
+# Brian Fitness Tracker v16.1 — Exercise Image Library
 
-Production-style Streamlit build with a polished navy sidebar, exercise image cards, right-side summary panels, and stable workout logging.
+This build integrates the uploaded workout exercise library into the app.
 
-## Important data rule
-- `data/workouts.csv` = workout plan
-- `data/workout_log.csv` = completed workout history
-
-Do not delete `data/workout_log.csv` when updating.
+## What changed
+- Adds `assets/exercises/` SVG machine illustrations.
+- Maps many LA Fitness exercises to matching visuals.
+- Keeps `workouts.csv` as your workout plan.
+- Keeps completed workouts in `data/workout_log.csv`.
+- Missing images no longer crash the app.
 
 ## Run locally
-Double-click `run_app.bat` or run:
+Double-click `run_app.bat`, or run:
 
 ```bash
 python -m streamlit run app.py
 ```
 
-## Upload to GitHub
-Upload everything inside this folder, including:
-- `.streamlit/`
-- `assets/`
-- `data/`
-- `app.py`
-- `requirements.txt`
-- `README.md`
+## GitHub upload
+Upload everything inside this folder to GitHub, including `assets/` and `data/`.
