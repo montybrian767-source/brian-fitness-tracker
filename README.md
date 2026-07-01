@@ -1,28 +1,32 @@
-# Brian Fitness Tracker 2.0 Alpha 3
+# Brian Fitness Tracker 2.0 Beta 1
 
-Commercial UI foundation with workout intelligence.
+Beta 1 is the first daily-use stability build.
 
-## What's new in Alpha 3
+## Added in Beta 1
+- Cleaner phone-focused Gym Mode
+- Weekly Plan page
+- Workout Complete summary page
+- Automatic workout_log backup before saving
+- Export latest workout
+- Keeps Alpha 3 analytics, coach preview, exercise cards, and image system
 
-- Progress Analytics page
-- Coach Preview page
-- Comeback Score
-- Personal Records table
-- Volume by day chart
-- Volume by muscle group chart
-- Improved rest timer workflow
-- Keeps saving completed sets to `data/workout_log.csv`
+## Data safety
+Your completed workouts save to:
+
+`data/workout_log.csv`
+
+Backups are created in:
+
+`data/backups/`
+
+Do not delete or overwrite `data/workout_log.csv` when updating.
 
 ## Run locally
-
 Double-click `run_app.bat` or run:
 
 ```bash
 python -m streamlit run app.py
 ```
 
-## GitHub / Streamlit Cloud
-
-Upload the contents of this folder to your existing GitHub repo. Do not upload the ZIP itself.
-
-Protect your workout history: do not overwrite `data/workout_log.csv` if you already have saved workouts.
+## GitHub / Streamlit
+Upload everything inside this folder to your GitHub repo, then reboot/redeploy Streamlit.

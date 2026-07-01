@@ -20,7 +20,7 @@ PROFILE_FILE = DATA_DIR / "profile.csv"
 LOG_COLUMNS = ["date","saved_at","week","day","workout","muscle_group","exercise","set_number","weight_lbs","reps","pain","rpe","notes","volume"]
 DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
 
-st.set_page_config(page_title="Brian Fitness Tracker 2.0 Alpha 3", page_icon="🏋️", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Brian Fitness Tracker 2.0 Beta 1", page_icon="🏋️", layout="wide", initial_sidebar_state="expanded")
 
 
 def load_css():
@@ -63,8 +63,21 @@ def load_log() -> pd.DataFrame:
     return df[LOG_COLUMNS]
 
 
+def backup_log():
+    ensure_files()
+    backup_dir = DATA_DIR / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    if LOG_FILE.exists():
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        target = backup_dir / f"workout_log_backup_{stamp}.csv"
+        target.write_bytes(LOG_FILE.read_bytes())
+        return target
+    return None
+
+
 def save_rows(rows: list[dict]):
     ensure_files()
+    backup_log()
     df = load_log()
     new = pd.DataFrame(rows)
     for c in LOG_COLUMNS:
@@ -150,7 +163,7 @@ def phone_ip() -> str:
 
 
 def sidebar(page_options):
-    st.sidebar.markdown('<div class="brand"><div class="brand-title">BRIAN FITNESS<br/>TRACKER 2.0</div><div class="brand-sub">Commercial Alpha 3</div></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="brand"><div class="brand-title">BRIAN FITNESS<br/>TRACKER 2.0</div><div class="brand-sub">Commercial Beta 1</div></div>', unsafe_allow_html=True)
     page = st.sidebar.radio("Navigation", page_options, label_visibility="collapsed")
     st.sidebar.markdown('<div class="sidebar-card"><b>Data Status</b><br/><span style="color:#a8c7ff!important">Workout history saves to</span><br/><code>data/workout_log.csv</code></div>', unsafe_allow_html=True)
     with st.sidebar.expander("📱 Phone Link"):
@@ -240,7 +253,7 @@ def rest_timer_box(seconds: int):
     st.markdown('</div>', unsafe_allow_html=True)
 
 def workout_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Today’s Workout</h1><p>Alpha 3 adds analytics, PR tracking, smarter coaching cues, and an improved rest timer workflow.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero"><h1>Today’s Workout</h1><p>Beta 1 focuses on daily gym use: cleaner Gym Mode, weekly plan, workout completion, backups, and improved image matching.</p></div>', unsafe_allow_html=True)
     cday, cdate, cweek, crest = st.columns([2,1,1,1])
     today = date.today().strftime("%A")
     day = cday.selectbox("Workout Day", DAY_ORDER, index=DAY_ORDER.index(today) if today in DAY_ORDER else 0)
@@ -265,7 +278,7 @@ def workout_page(workouts, log):
             start_w = float(row.get("starting_weight_lbs", 0) or 0)
             best = best_weight(log, ex)
             st.markdown('<div class="exercise-card alpha2-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="exercise-head"><div><div class="exercise-name">{ex}</div><div class="muted">Previous best: {best:g} lbs • Target {sets} × {target_reps}</div></div><div class="target-badge">Alpha 3 Card</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="exercise-head"><div><div class="exercise-name">{ex}</div><div class="muted">Previous best: {best:g} lbs • Target {sets} × {target_reps}</div></div><div class="target-badge">Beta 1 Card</div></div>', unsafe_allow_html=True)
             imgcol, formcol, cuecol = st.columns([1.05,2.05,1.05], gap="medium")
             with imgcol:
                 path = img_path(row)
@@ -310,8 +323,10 @@ def workout_page(workouts, log):
         if st.button("💾 Save Full Workout", type="primary"):
             if rows:
                 save_rows(rows)
+                st.session_state["last_saved_workout"] = {"sets": len(rows), "volume": totals["volume"], "day": day, "workout": workout, "date": str(wdate)}
                 st.success(f"Saved {len(rows)} sets to data/workout_log.csv")
                 st.balloons()
+                st.markdown(f'<div class="complete-panel"><h2>Workout Complete</h2><b>{day} — {workout}</b><br/>{len(rows)} sets saved • {totals["volume"]:,.0f} lbs volume<br/><span>Backup created before save.</span></div>', unsafe_allow_html=True)
             else:
                 st.warning("Enter reps and mark at least one set complete before saving.")
     with right:
@@ -322,7 +337,7 @@ def workout_page(workouts, log):
         rest_timer_box(rest_seconds)
         st.markdown('<div class="card"><div class="card-title">Quick Actions</div><a class="action-btn">Export Backup</a><a class="action-btn" style="background:#16a34a">Finish Workout</a><a class="action-btn" style="background:#f59e0b">Add Note</a></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="timer">⏱️ Rest Timer: {rest_seconds}s • Alpha 3 Workout Intelligence</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="timer">⏱️ Rest Timer: {rest_seconds}s • Beta 1 Gym Mode Ready</div>', unsafe_allow_html=True)
 
 
 def gym_mode_page(workouts, log):
@@ -357,7 +372,7 @@ def history_page(log):
 
 
 def progress_page(workouts, log):
-    st.markdown('<div class="hero"><h1>Progress Analytics</h1><p>Alpha 3 turns your workout log into progress charts, PRs, and muscle group insights.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero"><h1>Progress Analytics</h1><p>Beta 1 keeps the Alpha analytics and adds a more stable daily-use workflow.</p></div>', unsafe_allow_html=True)
     if log.empty:
         st.info("No workout history yet. Save a workout first.")
         return
@@ -380,7 +395,7 @@ def progress_page(workouts, log):
 
 
 def coach_page(workouts, log):
-    st.markdown('<div class="hero"><h1>AI Coach Preview</h1><p>Alpha 3 gives simple rule-based coaching recommendations from your saved workouts.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero"><h1>AI Coach Preview</h1><p>Beta 1 coach preview gives simple rule-based recommendations from your saved workouts.</p></div>', unsafe_allow_html=True)
     if log.empty:
         st.info("Save a workout first and the coach will start making recommendations.")
         return
@@ -423,6 +438,37 @@ def library_page(workouts):
             st.markdown('</div>', unsafe_allow_html=True)
 
 
+
+def weekly_plan_page(workouts, log):
+    st.markdown('<div class="hero"><h1>Weekly Plan</h1><p>Beta 1 gives you a clear muscle-group schedule before you start training.</p></div>', unsafe_allow_html=True)
+    for day in DAY_ORDER:
+        d = workouts[workouts["day"] == day].copy()
+        if d.empty:
+            continue
+        workout = d["workout"].iloc[0]
+        muscle = d["muscle_group"].iloc[0]
+        recent = log[log["day"].astype(str) == day] if not log.empty else pd.DataFrame()
+        sessions = recent["date"].nunique() if not recent.empty else 0
+        st.markdown(f'<div class="weekly-card"><div><span class="day-badge">{day}</span><h3>{workout}</h3><p>{muscle}</p></div><div class="weekly-meta"><b>{len(d)}</b><span>exercises</span><br/><b>{sessions}</b><span> saved sessions</span></div></div>', unsafe_allow_html=True)
+        with st.expander(f"View {day} exercises"):
+            st.dataframe(d[["exercise","target_sets","target_reps","muscle_group"]], use_container_width=True, hide_index=True)
+
+
+def completion_page(log):
+    st.markdown('<div class="hero"><h1>Workout Complete</h1><p>Review your latest saved session and export your log.</p></div>', unsafe_allow_html=True)
+    if log.empty:
+        st.info("No saved workouts yet.")
+        return
+    latest_date = log["date"].astype(str).max()
+    latest = log[log["date"].astype(str) == latest_date].copy()
+    latest["volume"] = pd.to_numeric(latest["volume"], errors="coerce").fillna(0)
+    c1,c2,c3 = st.columns(3)
+    c1.metric("Date", latest_date)
+    c2.metric("Sets", len(latest))
+    c3.metric("Volume", f"{latest['volume'].sum():,.0f} lbs")
+    st.dataframe(latest.sort_values(["exercise","set_number"]), use_container_width=True)
+    st.download_button("Export latest workout", latest.to_csv(index=False).encode(), f"latest_workout_{latest_date}.csv", "text/csv")
+
 def data_safety(log):
     st.markdown('<div class="hero"><h1>Data Safety</h1><p>Keep workout_log.csv safe. Do not overwrite it during updates.</p></div>', unsafe_allow_html=True)
     st.success(f"Workout log location: {LOG_FILE}")
@@ -439,10 +485,12 @@ def main():
     ensure_files(); load_css()
     workouts = load_workouts()
     log = load_log()
-    page = sidebar(["Dashboard","Today’s Workout","Gym Mode","Progress","Coach","Exercise Library","History","Data Safety"])
+    page = sidebar(["Dashboard","Today’s Workout","Gym Mode","Weekly Plan","Workout Complete","Progress","Coach","Exercise Library","History","Data Safety"])
     if page == "Dashboard": dashboard(workouts, log)
     elif page == "Today’s Workout": workout_page(workouts, log)
     elif page == "Gym Mode": gym_mode_page(workouts, log)
+    elif page == "Weekly Plan": weekly_plan_page(workouts, log)
+    elif page == "Workout Complete": completion_page(log)
     elif page == "Progress": progress_page(workouts, log)
     elif page == "Coach": coach_page(workouts, log)
     elif page == "Exercise Library": library_page(workouts)
